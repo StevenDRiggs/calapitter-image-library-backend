@@ -26,8 +26,13 @@ gem 'bootsnap', '>= 1.4.2', require: false
 gem 'rack-cors'
 
 group :development, :test do
+  # load environment variables from .env
+  gem 'dotenv-rails'
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
-  gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
+  gem 'byebug', platforms: [:mri, :mingw, :x64_mingw, :ruby]
+  # for when byebug doesn't work
+  gem 'pry'
+  # generate fake data for testing 
   gem 'faker'
 end
 
