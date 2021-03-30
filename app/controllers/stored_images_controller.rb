@@ -3,7 +3,7 @@ class StoredImagesController < ApplicationController
 
   # GET /stored_images
   def index
-    @stored_images = StoredImage.all
+    @stored_images = StoredImage.all.where(verified: true)
 
     render json: @stored_images
   end
