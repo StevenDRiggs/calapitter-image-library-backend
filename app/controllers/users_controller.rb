@@ -19,6 +19,11 @@ class UsersController < ApplicationController
   def create
     @user = User.new(user_params)
 
+    colors = %w(red orange yellow green blue indigo violet)
+    color = colors.sample
+
+    @user.avatar.attach(io: File.open("avatar_svgs/#{color}.svg"), filename: "#{color}.svg")
+
     if @user.save
       token = encode_token({user_id: @user.id})
       session[:user_id] = @user.id
@@ -27,6 +32,7 @@ class UsersController < ApplicationController
           username: @user.username,
           email: @user.email,
           is_admin: @user.is_admin,
+          avatar: @user.avatar,
         },
         token: token,
       }, status: :created, location: @user
@@ -73,9 +79,10 @@ class UsersController < ApplicationController
         username: @user.username,
         email: @user.email,
         is_admin: @user.is_admin,
+        avatar: @user.avatar.download,
       },
       token: token,
-    }
+    }, content_type: 'multipart/formdata'
   end
 
   def logout
