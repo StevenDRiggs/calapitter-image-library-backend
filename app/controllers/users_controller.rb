@@ -19,10 +19,11 @@ class UsersController < ApplicationController
   def create
     @user = User.new(user_params)
 
-    colors = %w(red orange yellow green blue indigo violet)
-    color = colors.sample
+    #colors = %w(red orange yellow green blue indigo violet)
+    #color = colors.sample
 
-    @user.avatar.attach(io: File.open("avatar_svgs/#{color}.svg"), filename: "#{color}.svg")
+    #@user.avatar.attach(io: File.open("avatar_svgs/#{color}.svg"), filename: "#{color}.svg")
+    @user.avatar.attach(io: File.open("Steven_Riggs_photo.jpg"), filename: "Steven_Riggs_photo.jpg")
 
     if @user.save
       token = encode_token({user_id: @user.id})
@@ -32,7 +33,7 @@ class UsersController < ApplicationController
           username: @user.username,
           email: @user.email,
           is_admin: @user.is_admin,
-          avatar: @user.avatar,
+          avatar: @user.avatar.download,
         },
         token: token,
       }, status: :created, location: @user
