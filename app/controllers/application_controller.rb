@@ -1,6 +1,6 @@
 class ApplicationController < ActionController::API
   def encode_token(payload)
-    JWT.encode(payload, ENV['SECRET_KEY_BASE'])
+    JWT.encode(payload, ENV['SECRET_KEY_BASE'], 'HS256')
   end
 
   def auth_header
@@ -13,7 +13,7 @@ class ApplicationController < ActionController::API
       token = auth_header.split(' ')[1]
       # header: { Authorization: 'Bearer <token>' }
       begin
-        JWT.decode(token, ENV['SECRET_KEY_BASE'], true, algorithm: 'HS256')
+        JWT.decode(token, ENV['SECRET_KEY_BASE'], 'HS256')
       rescue JWT::DecodeError => error
         render json: {errors: [error]} and return
       end
@@ -34,7 +34,14 @@ class ApplicationController < ActionController::API
   end
 
 
+  # test methods
+  
+  def test_auth_header
+    render json: auth_header
+  end
 
-  # mailer methods
+  def test_decoded_token
+    render json: decoded_token
+  end
 end
 

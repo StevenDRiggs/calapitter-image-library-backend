@@ -7,4 +7,7 @@ Rails.application.routes.draw do
   post '/signup', to: 'users#create'
   post '/login', to: 'users#login'
   post '/logout', to: 'users#logout'
+
+  post 'test_auth_header', to: 'application#test_auth_header'
+  post 'test_decoded_token', to: 'application#test_decoded_token'
 end

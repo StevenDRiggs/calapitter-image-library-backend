@@ -1,88 +1,37 @@
 require 'rails_helper'
+require 'application_controller'
 
 
-RSpec.describe 'routing', type: :routing do
-  context 'non-RESTful routing' do
-    it 'routes post /signup to users#create' do
-      expect(post('/signup')).to route_to('users#create')
-    end
-
-    it 'routes post /login to users#login' do
-      expect(post('/login')).to route_to('users#login')
-    end
-
-    it 'routes post /logout to users#logout' do
-      expect(post('/logout')).to route_to('users#logout')
-    end
+RSpec.describe ApplicationController do
+  before(:all) do
+    @payload = {payload: 'payload'}
+    ac = ApplicationController.new
+    ENV['SECRET_KEY_BASE'] = 'secret'
+    @encoded = ac.encode_token(@payload)
   end
 
-  context 'RESTful routing' do
-    context 'routes stored_images properly' do
-      it 'routes get /stored_images to stored_images#index' do
-        expect(get('/stored_images')).to route_to('stored_images#index')
-      end
-
-      it 'routes post /stored_images to stored_images#create' do
-        expect(post('/stored_images')).to route_to('stored_images#create')
-      end
-
-      it 'routes get /stored_images/:id to stored_images#show' do
-        expect(get('/stored_images/1')).to route_to('stored_images#show', id: '1')
-      end
-
-      it 'routes patch/put /stored_images/:id to stored_images#update' do
-        expect(patch('/stored_images/1')).to route_to('stored_images#update', id: '1')
-        expect(put('/stored_images/1')).to route_to('stored_images#update', id: '1')
-      end
-
-      it 'routes delete /stored_images/:id to stored_images#destroy' do
-        expect(delete('/stored_images/1')).to route_to('stored_images#destroy', id: '1')
+  context 'JWT' do
+    describe '#encode_token' do
+      it 'encodes a payload' do
+        expect(@encoded).to eq('eyJhbGciOiJIUzI1NiJ9.eyJwYXlsb2FkIjoicGF5bG9hZCJ9.vowVLx0snUbiLv7ajozX30sXlDmRcpqPqCJ94tU0KjU')
       end
     end
 
-    context 'routes users properly' do
-      it 'routes get /users to users#index' do
-        expect(get('/users')).to route_to('users#index')
-      end
+    describe '#auth_header', type: :request do
+      it 'returns the value at the "Authorization" header' do
+        headers = {'Authorization' => "Bearer #{@encoded}"}
 
-      it 'routes post /users to users#create' do
-        expect(post('/users')).to route_to('users#create')
-      end
+        post('/test_auth_header', headers: headers)
 
-      it 'routes get /users/:id to users#show' do
-        expect(get('/users/1')).to route_to('users#show', id: '1')
-      end
-
-      it 'routes patch/put /users/:id to users#update' do
-        expect(patch('/users/1')).to route_to('users#update', id: '1')
-        expect(put('/users/1')).to route_to('users#update', id: '1')
-      end
-
-      it 'routes delete /users/:id to users#destroy' do
-        expect(delete('/users/1')).to route_to('users#destroy', id: '1')
+        expect(response.body).to eq("Bearer #{@encoded}")
       end
     end
 
-    context 'routes users/stored_images properly' do
-      it 'routes get /users/:user_id/stored_images to stored_images#index' do
-        expect(get('/users/1/stored_images')).to route_to('stored_images#index', user_id: '1')
-      end
+    describe '#decoded_token', type: request do
+      it 'returns nil if auth_header fails' do
+        post('test_decoded_token')
 
-      it 'routes post /users/:user_id/stored_images to stored_images#create' do
-        expect(post('/users/1/stored_images')).to route_to('stored_images#create', user_id: '1')
-      end
-
-      it 'routes get /users/:user_id/stored_images/:id to stored_images#show' do
-        expect(get('/users/1/stored_images/1')).to route_to('stored_images#show', user_id: '1', id: '1')
-      end
-
-      it 'routes patch/put /users/:user_id/stored_images/:id to stored_images#update' do
-        expect(patch('/users/1/stored_images/1')).to route_to('stored_images#update', user_id: '1', id: '1')
-        expect(put('/users/1/stored_images/1')).to route_to('stored_images#update', user_id: '1', id: '1')
-      end
-
-      it 'routes delete /users/:user_id/stored_images/:id to stored_images#show' do
-        expect(delete('/users/1/stored_images/1')).to route_to('stored_images#destroy', user_id: '1', id: '1')
+        expect(response.body).to be(nil)
       end
     end
   end
