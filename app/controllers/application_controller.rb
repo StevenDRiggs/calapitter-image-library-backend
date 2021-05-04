@@ -32,16 +32,5 @@ class ApplicationController < ActionController::API
 
     render json: {errors: ['Must be logged in as admin']} unless @user && @user.is_admin
   end
-
-
-  # test methods
-  
-  def test_auth_header
-    render json: auth_header
-  end
-
-  def test_decoded_token
-    render json: decoded_token
-  end
 end
 
