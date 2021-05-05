@@ -6,8 +6,9 @@ class User < ApplicationRecord
   has_many_attached :images
 
   validates :username, :email, :password, presence: true
-  validates :username, :email, uniqueness: true
-  validates :username, profanity_filter: true
+  validates :username, :email, uniqueness: true, profanity_filter: true
+  validates :username, length: {minimum: 2}
+  validates :password, length: {minimum: 3}
 
 
   # class methods
