@@ -3,6 +3,11 @@ class StoredImage < ApplicationRecord
   has_one :user, through: :user_image
   has_one_attached :image
 
+  validates :url, url: true, unless: -> {
+    url.blank? ||
+    url =~ /\/rails\/active_storage\/blobs\/redirect\/.+/
+  }
+
   # instance methods
   def attach_image(img)
     self.image.attach(img)
@@ -11,9 +16,13 @@ class StoredImage < ApplicationRecord
 
   def update(params)
     if params.keys.include?(:url) && params[:url] =~ /^https?:\/\//
-      self.image.purge
       new_image = Down.download(params[:url], max_size: 5 * 1024 * 1024)
-      self.image.attach(io: File.open(new_image), filename: new_image.original_filename, content_type: new_image.content_type)
+      if new_image.content_type =~ /(application|image)\/(gif|jpeg|png|svg)/
+        self.image.purge
+        self.image.attach(io: File.open(new_image), filename: new_image.original_filename, content_type: new_image.content_type)
+      else
+        return false
+      end
       
       params[:verified] = false
     end

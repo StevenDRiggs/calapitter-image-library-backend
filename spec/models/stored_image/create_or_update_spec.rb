@@ -30,7 +30,7 @@ RSpec.describe StoredImage, type: :model do
     }
 
     before(:example) do
-      si.attach_image(io: File.open(Rails.root.join('spec', 'models', 'Steven_Riggs_Photo.jpg')), filename: 'test photo', content_type: 'application/jpg')
+      si.attach_image(io: File.open(Rails.root.join('spec', 'models', 'Steven_Riggs_Photo.jpg')), filename: 'test photo', content_type: 'image/jpeg')
     end
 
     it 'attaches image file' do
@@ -56,7 +56,7 @@ RSpec.describe StoredImage, type: :model do
     }
 
     before(:example) do
-      si.attach_image(io: File.open(Rails.root.join('spec', 'models', 'Steven_Riggs_Photo.jpg')), filename: 'test photo', content_type: 'application/jpg')
+      si.attach_image(io: File.open(Rails.root.join('spec', 'models', 'Steven_Riggs_Photo.jpg')), filename: 'test photo', content_type: 'image/jpeg')
       si.update!(verified: true)
     end
 
