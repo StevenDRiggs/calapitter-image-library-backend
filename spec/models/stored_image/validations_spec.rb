@@ -44,9 +44,17 @@ RSpec.describe StoredImage, type: :model do
       }
 
       it 'does not update url' do
-          old_url = @si.url
-
           expect(@si.update(url: invalid_url)).to be(false)
+      end
+    end
+
+    context 'with profane url' do
+      let(:profane_url) {
+        'https://bitchez-guild.com/wp-content/uploads/2019/07/mockup-c7ddc589-416x416.jpg'
+      }
+
+      it 'does not update url' do
+          expect(@si.update(url: profane_url)).to be(false)
       end
     end
   end

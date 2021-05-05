@@ -7,6 +7,7 @@ class StoredImage < ApplicationRecord
     url.blank? ||
     url =~ /\/rails\/active_storage\/blobs\/redirect\/.+/
   }
+  validates :url, profanity_filter: true
 
   # instance methods
   def attach_image(img)
