@@ -1,0 +1,4 @@
+BANNED: true = account permenantly banned (NO ACCESS)
+SUSPENDED: true = account temporarily suspended (NO ACCESS)
+SUSPENSION_CLEAR_DATE: <datetime> = suspension automatically lifted upon user login after <datetime>
+HISTORY: [<flag>: [<datetimes>]] = list of previous/current <flags> and <datetimes> added

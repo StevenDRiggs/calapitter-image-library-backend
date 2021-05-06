@@ -62,34 +62,34 @@ class UsersController < ApplicationController
 
 
   # non-RESTful routes
+  # POST /login
   def login
     username_or_email, password = user_params.values_at(:usernameOrEmail, :password)
 
     @user = User.find_by_username_or_email(username_or_email)
     unless @user && @user.authenticate(password)
       render json: {
-        errors: @user.errors.full_messages, status: :unprocessable_entity,
+        errors: ['User not found'], status: :unprocessable_entity,
       } and return
+    else
+      if @user.flags.include?('BANNED' => true)
+        render json: {
+          errors: ['User is BANNED'], status: :forbidden,
+        } and return
+      elsif @user.flags.include?('SUSPENDED' => true)
+        render json: {
+          errors: ['User is SUSPENDED'], status: :forbidden,
+        } and return
+      end
     end
 
     token = encode_token({user_id: @user.id})
     session[:user_id] = @user.id
 
     render json: {
-      user: {
-        username: @user.username,
-        email: @user.email,
-        is_admin: @user.is_admin,
-        avatar: @user.avatar.download,
-      },
+      user: @user,
       token: token,
     }, content_type: 'multipart/formdata'
-  end
-
-  def logout
-    session.clear
-
-    render json: 'Session cleared'
   end
 
 
