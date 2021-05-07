@@ -17,6 +17,7 @@ RSpec.describe 'User requests', type: :request do
           user: {
             usernameOrEmail: 'user',
             password: 'pass',
+          }
         }
       }
 
@@ -146,7 +147,8 @@ RSpec.describe 'User requests', type: :request do
         end
 
         context 'when SUSPENSION_CLEAR_DATE has passed' do
-          it 'renders
+          it 'renders' do
+          end
         end
 
         context 'when SUSPENSION_CLEAR_DATE has not passed' do
@@ -157,47 +159,47 @@ RSpec.describe 'User requests', type: :request do
   end
 
   describe 'GET /users' do
-    context 'when logged in as admin' do
-      it 'succeeds' do
-      end
+          context 'when logged in as admin' do
+          it 'succeeds' do
+          end
 
-      it 'renders json for all users' do
-      end
+          it 'renders json for all users' do
+          end
 
-      it 'does not render errors' do
-      end
-    end
+          it 'does not render errors' do
+          end
+          end
 
-    context 'when logged in as non-admin' do
-      it 'succeeds' do
-      end
+          context 'when logged in as non-admin' do
+          it 'succeeds' do
+          end
 
-      it 'renders limited json for all users' do
-      end
+          it 'renders limited json for all users' do
+          end
 
-      it 'does not render errors' do
-      end
-    end
+          it 'does not render errors' do
+          end
+          end
 
-    context 'when not logged in' do
-      it 'is forbidden' do
-      end
+          context 'when not logged in' do
+          it 'is forbidden' do
+          end
 
-      it 'does not render json for all users' do
-      end
+          it 'does not render json for all users' do
+          end
 
-      it 'renders errors' do
-      end
-    end
-  end
+          it 'renders errors' do
+          end
+          end
+          end
 
-  describe 'GET /users/:id' do
+          describe 'GET /users/:id' do
   end
 
   describe 'POST /signup' do
-  end
+          end
 
-  describe 'PATCH/PUT /users/:id' do
+          describe 'PATCH/PUT /users/:id' do
   end
 
   describe 'DELETE /users/:id' do

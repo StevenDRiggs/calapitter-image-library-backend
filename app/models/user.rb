@@ -25,11 +25,16 @@ class User < ApplicationRecord
 
 
   # instance methods
-  
+
   def as_json(options={})
-     options[:except] ||= [:id, :created_at, :updated_at, :password_digest]
-     super(options)
-   end
+    options[:except] ||= [:id, :created_at, :updated_at, :password_digest]
+    super(options)
+  end
+
+  def set_flag(flag, value)
+    self.flags[flag] = value
+    self.flags['HISTORY'] << {flag => [value, Time.now]}
+  end
 
   def usernameOrEmail=(username_or_email)
     # method defined only for parameter acceptance; should always be empty string
