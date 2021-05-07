@@ -4,6 +4,9 @@ require 'active_support/testing/time_helpers'
 require 'user'
 
 
+include ActiveSupport::Testing::TimeHelpers
+
+
 RSpec.describe User do
   context 'class methods' do
     context 'self.find_by_username_or_email' do
@@ -34,7 +37,7 @@ RSpec.describe User do
       @user.destroy
     end
 
-    fcontext 'set_flag' do
+    context 'set_flag' do
       before(:example) do
         travel_to(Time.new(2021, 1, 1))
 
