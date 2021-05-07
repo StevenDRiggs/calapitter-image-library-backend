@@ -25,7 +25,7 @@ RSpec.describe 'User requests', type: :request do
         post '/login', params: valid_params
 
         expect(JSON.parse(response.body)).to include('token', 'user')
-        expect(JSON.parse(response.body)['user']).to include('username' => 'user', 'email' => 'user@email.com', 'is_admin' => false, 'flags' => nil)
+        expect(JSON.parse(response.body)['user']).to include('username' => 'user', 'email' => 'user@email.com', 'is_admin' => false, 'flags' => {'HISTORY' => []})
         expect(JSON.parse(response.body)['user']).to_not include('id', 'password_digest', 'created_at', 'updated_at')
       end
 
@@ -108,13 +108,13 @@ RSpec.describe 'User requests', type: :request do
         end
       end
 
-      context 'when user is BANNED' do
+      fcontext 'when user is BANNED' do
         before(:context) do
-          @user.update!(flags: ['BANNED' => true])
+          @user.set_flag('BANNED', true)
         end
 
         after(:context) do
-          @user.update!(flags: nil)
+          @user.clear_flag('BANNED')
         end
 
         it 'does not render json for user' do
@@ -139,11 +139,9 @@ RSpec.describe 'User requests', type: :request do
 
       context 'when user is SUSPENDED' do
         before(:context) do
-          @user.update!(flags: ['SUSPENDED' => true])
         end
 
         after(:context) do
-          @user.update!(flags: nil)
         end
 
         context 'when SUSPENSION_CLEAR_DATE has passed' do

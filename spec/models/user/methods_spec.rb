@@ -48,8 +48,21 @@ RSpec.describe User do
         travel_back
       end
 
-      it 'updates HISTORY' do
-        expect(@user.flags['HISTORY'].last).to eq('TEST_FLAG' => [true, Time.now])
+      it 'sets the flag' do
+        @user.reload
+
+        expect(@user.flags).to include('TEST_FLAG' => true)
+      end
+
+      fit 'updates HISTORY' do
+        @user.reload
+
+        expect(@user.flags['HISTORY'].last).to eq('TEST_FLAG' => [true, Time.now.to_s])
+      end
+    end
+
+    context 'clear_flag' do
+      it 'clears the flag' do
       end
     end
   end

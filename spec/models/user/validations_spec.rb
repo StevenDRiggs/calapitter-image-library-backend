@@ -147,6 +147,30 @@ RSpec.describe User do
         end
       end
 
+      context 'with invalid email' do
+        before(:example) do
+          @invalid_params[:email] = 'notanemail'
+        end
+
+        after(:example) do
+          @invalid_params[:email] = 'user@email.com'
+        end
+
+        it 'does not create new user' do
+          expect {
+            User.create(@invalid_params)
+          }.to_not change {
+            User.all.length
+          }
+        end
+
+        it 'does not update existing user' do
+          user = User.create!(username: 'valid username', email: 'valid@email.com', password: 'pass')
+
+          expect(user.update(@invalid_params)).to be(false)
+        end
+      end
+
       context 'with profane email' do
         before(:example) do
           @invalid_params[:email] = ['bitch@email.com', 'b1tch@email.com'].sample

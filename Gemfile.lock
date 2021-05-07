@@ -82,6 +82,8 @@ GEM
     down (5.2.1)
       addressable (~> 2.5)
     erubi (1.10.0)
+    faker (2.17.0)
+      i18n (>= 1.6, < 2)
     ffi (1.15.0)
     globalid (0.4.2)
       activesupport (>= 4.2.0)
@@ -207,6 +209,7 @@ DEPENDENCIES
   byebug
   capybara
   down (~> 5.0)
+  faker
   image_processing (~> 1.2)
   jwt
   listen (~> 3.3)

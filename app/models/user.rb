@@ -5,10 +5,12 @@ class User < ApplicationRecord
   has_one_attached :avatar
   has_many_attached :images
 
-  validates :username, :email, :password, presence: true
+  validates :username, :email, presence: true
   validates :username, :email, uniqueness: true, profanity_filter: true
   validates :username, length: {minimum: 2}
-  validates :password, length: {minimum: 3}
+  validates :email, email: true
+  validates :password, length: {minimum: 3}, presence: true, on: :create
+  validates :password, length: {minimum: 3}, presence: true, on: :update, unless: -> {:password.blank?}
 
 
   # class methods
@@ -34,6 +36,8 @@ class User < ApplicationRecord
   def set_flag(flag, value)
     self.flags[flag] = value
     self.flags['HISTORY'] << {flag => [value, Time.now]}
+
+    self.save
   end
 
   def usernameOrEmail=(username_or_email)

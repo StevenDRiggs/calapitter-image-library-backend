@@ -40,6 +40,7 @@ group :development, :test do
   # For when byebug is insufficient
   gem 'pry'
   gem 'rspec-rails'
+  gem 'faker'
 end
 
 group :development do
