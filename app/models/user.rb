@@ -40,6 +40,12 @@ class User < ApplicationRecord
     self.save
   end
 
+  def clear_flag(flag)
+    self.flags = self.flags.except(flag)
+
+    self.save
+  end
+
   def usernameOrEmail=(username_or_email)
     # method defined only for parameter acceptance; should always be empty string
   end

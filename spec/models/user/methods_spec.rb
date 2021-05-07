@@ -49,20 +49,31 @@ RSpec.describe User do
       end
 
       it 'sets the flag' do
-        @user.reload
-
         expect(@user.flags).to include('TEST_FLAG' => true)
       end
 
-      fit 'updates HISTORY' do
-        @user.reload
+      it 'updates HISTORY' do
+        expect(@user.flags['HISTORY'].last).to include('TEST_FLAG')
 
-        expect(@user.flags['HISTORY'].last).to eq('TEST_FLAG' => [true, Time.now.to_s])
+        tf = @user.flags['HISTORY'].last['TEST_FLAG']
+        expect(tf[0]).to be(true)
+        expect(Time.new(tf[1])).to eq(Time.now.to_s)
       end
     end
 
     context 'clear_flag' do
+      before(:example) do
+        @user.set_flag('TEST_FLAG', true)
+
+        @user.clear_flag('TEST_FLAG')
+      end
+
       it 'clears the flag' do
+        expect(@user.flags).to_not include('TEST_FLAG')
+      end
+
+      it 'does not update history' do
+        expect(@user.flags['HISTORY'].last).to include('TEST_FLAG')
       end
     end
   end
