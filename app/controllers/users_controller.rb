@@ -72,14 +72,19 @@ class UsersController < ApplicationController
         errors: ['User not found'], status: :unprocessable_entity,
       } and return
     else
-      if @user.flags.include?('BANNED' => true)
+      if @user.flags['BANNED']
         render json: {
           errors: ['User is BANNED'], status: :forbidden,
         } and return
-      elsif @user.flags.include?('SUSPENDED' => true)
-        render json: {
-          errors: ['User is SUSPENDED'], status: :forbidden,
-        } and return
+      elsif @user.flags['SUSPENDED']
+        if Time.now < Time.parse(@user.flags['SUSPENSION_CLEAR_DATE'])
+          render json: {
+            errors: ['User is SUSPENDED'], status: :forbidden,
+          } and return
+        else
+          @user.clear_flag('SUSPENDED')
+          @user.clear_flag('SUSPENSION_CLEAR_DATE')
+        end
       end
     end
 

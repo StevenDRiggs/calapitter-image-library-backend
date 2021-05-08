@@ -42,9 +42,7 @@ RSpec.describe User do
         travel_to(Time.new(2021, 1, 1))
 
         @user.set_flag('TEST_FLAG', true)
-      end
 
-      after(:example) do
         travel_back
       end
 
@@ -57,7 +55,7 @@ RSpec.describe User do
 
         tf = @user.flags['HISTORY'].last['TEST_FLAG']
         expect(tf[0]).to be(true)
-        expect(Time.new(tf[1])).to eq(Time.now.to_s)
+        expect(Time.parse(tf[1])).to eq(Time.new(2021, 1, 1))
       end
     end
 

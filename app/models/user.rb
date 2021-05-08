@@ -43,7 +43,7 @@ class User < ApplicationRecord
   def clear_flag(flag)
     self.flags = self.flags.except(flag)
 
-    self.save
+    self.save(validate: false)
   end
 
   def usernameOrEmail=(username_or_email)
