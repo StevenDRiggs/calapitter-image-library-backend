@@ -91,6 +91,9 @@ class UsersController < ApplicationController
     token = encode_token({user_id: @user.id})
     session[:user_id] = @user.id
 
+    @user.set_flag('LAST_LOGIN', Time.now)
+    @user.clear_flag('LAST_LOGIN')
+
     render json: {
       user: @user,
       token: token,

@@ -35,7 +35,7 @@ class User < ApplicationRecord
 
   def set_flag(flag, value)
     self.flags[flag] = value
-    self.flags['HISTORY'] << {flag => [value, Time.now]}
+    self.flags['HISTORY'] << [flag, value, Time.now]
 
     self.save
   end

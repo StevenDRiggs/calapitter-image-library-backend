@@ -23,12 +23,29 @@ RSpec.describe 'User requests', type: :request do
       remove_instance_variable(:@valid_params)
     end
 
+    after(:example) do
+      @user.update!(flags: {
+        'HISTORY' => []
+      })
+    end
+
     context 'with valid user params' do
       it 'renders json for user with JWT' do
+        travel_to(Time.new(2021, 1, 1))
         post '/login', params: @valid_params
+        travel_back
 
         expect(JSON.parse(response.body)).to include('token', 'user')
-        expect(JSON.parse(response.body)['user']).to include('username' => 'user', 'email' => 'user@email.com', 'is_admin' => false, 'flags' => {'HISTORY' => []})
+        expect(JSON.parse(response.body)['user']).to include('username' => 'user', 'email' => 'user@email.com', 'is_admin' => false)
+
+        expect(JSON.parse(response.body)['user']).to include('flags')
+        expect(JSON.parse(response.body)['user']['flags']).to include('HISTORY')
+        history_flag = JSON.parse(response.body)['user']['flags']['HISTORY']
+        expect(history_flag.length).to be(1)
+        expect(history_flag[0][0]).to eq('LAST_LOGIN')
+        expect(Time.parse(history_flag[0][1])).to eq(Time.new(2021, 1, 1))
+        expect(Time.parse(history_flag[0][2])).to eq(Time.new(2021, 1, 1))
+
         expect(JSON.parse(response.body)['user']).to_not include('id', 'password_digest', 'created_at', 'updated_at')
       end
 
@@ -141,18 +158,11 @@ RSpec.describe 'User requests', type: :request do
       end
 
       context 'when user is SUSPENDED' do
-        before(:context) do
-          travel_to(Time.new(2021, 1, 1))
-
-          @user.set_flag('SUSPENDED', true)
-
-          travel_back
-        end
-
         context 'when SUSPENSION_CLEAR_DATE has passed' do
           before(:example) do
             travel_to(Time.new(2021, 1, 1))
 
+            @user.set_flag('SUSPENDED', true)
             @user.set_flag('SUSPENSION_CLEAR_DATE', Time.now.prev_day)
 
             travel_back
@@ -167,30 +177,37 @@ RSpec.describe 'User requests', type: :request do
           end
 
           it 'renders json for user with JWT' do
+            travel_to(Time.new(2021, 1, 1))
             post '/login', params: @valid_params
+            travel_back
 
             expect(JSON.parse(response.body)).to include('token', 'user')
             expect(JSON.parse(response.body)['user']).to include('username' => 'user', 'email' => 'user@email.com', 'is_admin' => false)
+
             expect(JSON.parse(response.body)['user']).to include('flags')
             expect(JSON.parse(response.body)['user']['flags']).to include('HISTORY')
+            history_flag = JSON.parse(response.body)['user']['flags']['HISTORY']
+            expect(history_flag.length).to be(3)
+            
+            expect(history_flag[0][0]).to eq('SUSPENDED')
+            expect(history_flag[0][1]).to be(true)
+            expect(Time.parse(history_flag[0][2])).to eq(Time.new(2021, 1, 1))
 
-            hist = JSON.parse(response.body)['user']['flags']['HISTORY']
-            expect(hist[-3]).to include('SUSPENDED')
-            expect(hist[-2]).to include('SUSPENSION_CLEAR_DATE')
+            expect(history_flag[1][0]).to eq('SUSPENSION_CLEAR_DATE')
+            expect(Time.parse(history_flag[1][1])).to eq(Time.new(2020, 12, 31))
+            expect(Time.parse(history_flag[1][2])).to eq(Time.new(2021, 1, 1))
 
-            susp = hist[-3]['SUSPENDED']
-            expect(susp[0]).to be(true)
-            expect(Time.parse(susp[1])).to eq(Time.new(2021, 1, 1))
-
-            scd = hist[-2]['SUSPENSION_CLEAR_DATE']
-            expect(Time.parse(scd[0])).to eq(Time.new(2020, 12, 31))
-            expect(Time.parse(scd[1])).to eq(Time.new(2021, 1, 1))
+            expect(history_flag[2][0]).to eq('LAST_LOGIN')
+            expect(Time.parse(history_flag[2][1])).to eq(Time.new(2021, 1, 1))
+            expect(Time.parse(history_flag[2][2])).to eq(Time.new(2021, 1, 1))
 
             expect(JSON.parse(response.body)['user']).to_not include('id', 'password_digest', 'created_at', 'updated_at')
           end
 
           it 'does not render errors' do
+            travel_to(Time.new(2021, 1, 1))
             post '/login', params: @valid_params
+            travel_back
 
             expect(JSON.parse(response.body)).to_not include('errors')
           end
@@ -235,50 +252,84 @@ RSpec.describe 'User requests', type: :request do
     end
   end
 
-    #  describe 'GET /users' do
-    #    context 'when logged in as admin' do
-    #      it 'succeeds' do
-    #      end
-    #
-    #      it 'renders json for all users' do
-    #      end
-    #
-    #      it 'does not render errors' do
-    #      end
-    #    end
-    #
-    #    context 'when logged in as non-admin' do
-    #      it 'succeeds' do
-    #      end
-    #
-    #      it 'renders limited json for all users' do
-    #      end
-    #
-    #      it 'does not render errors' do
-    #      end
-    #    end
-    #
-    #    context 'when not logged in' do
-    #      it 'is forbidden' do
-    #      end
-    #
-    #      it 'does not render json for all users' do
-    #      end
-    #
-    #      it 'renders errors' do
-    #      end
-    #    end
-    #  end
-    #
-    #  describe 'GET /users/:id' do
-    #  end
-    #
-    #  describe 'POST /signup' do
-    #  end
-    #
-    #  describe 'PATCH/PUT /users/:id' do
-    #  end
-    #
-    #  describe 'DELETE /users/:id' do
-    #  end
+  describe 'GET /users' do
+    before(:context) do
+      3.times.with_index do |i|
+        User.create!(username: "user#{i}", email: "user#{i}@email.com", password: 'pass')
+      end
+    end
+
+    after(:context) do
+      User.destroy_all
+    end
+
+    context 'when logged in as admin' do
+      before(:example) do
+        @user = User.first
+
+        @user.update(is_admin: true)
+
+        travel_to(Time.new(2021, 1, 1))
+        post '/login', params: {
+          user: {
+            usernameOrEmail: @user.username,
+            password: 'pass',
+          }
+        }
+        travel_back
+
+        @valid_headers = {
+          'Authentication' => JSON.parse(response.body)['token'],
+        }
+      end
+
+      fit 'renders json for all users' do
+        get '/users', headers: @valid_headers
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json.length).to be(3)
+        binding.pry
+        resp_json.each.with_index do |user, i|
+          expect(user).to include('username' => "user#{i}", 'email' => "user#{i}@email.com", 'is_admin' => (i == 0 ? true : false))
+        end
+      end
+
+      it 'does not render errors' do
+      end
+    end
+
+    context 'when logged in as non-admin' do
+      it 'succeeds' do
+      end
+
+      it 'renders limited json for all users' do
+      end
+
+      it 'does not render errors' do
+      end
+    end
+
+    context 'when not logged in' do
+      it 'is forbidden' do
+      end
+
+      it 'does not render json for all users' do
+      end
+
+      it 'renders errors' do
+      end
+    end
   end
+
+  #  describe 'GET /users/:id' do
+  #  end
+  #
+  #  describe 'POST /signup' do
+  #  end
+  #
+  #  describe 'PATCH/PUT /users/:id' do
+  #  end
+  #
+  #  describe 'DELETE /users/:id' do
+  #  end
+end
