@@ -28,3 +28,6 @@
 
 # Ignore rspec examples
 /spec/examples.txt
+
+# Ignore environment variables
+.env

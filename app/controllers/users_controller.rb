@@ -5,14 +5,40 @@ class UsersController < ApplicationController
 
   # GET /users
   def index
-    @users = User.all
+    @users = User.all.sort {|a, b| a.id <=> b.id}
 
-    render json: @users
+    if is_admin?
+      render json: @users and return
+    elsif verify_login
+      render json: @users.map {|user|
+        {
+          'username' => user.username,
+        }
+      }
+    else
+      render json: {
+        errors: ['Must be logged in'],
+      }
+    end
   end
 
   # GET /users/:id
   def show
-    render json: @user
+    if is_admin? || (@user && @user.id == params[:id].to_i)
+      begin
+        render json: {
+          user: User.find(params[:id]),
+        }
+      rescue ActiveRecord::RecordNotFound
+        render json: {
+          errors: ['User not found'],
+        } and return
+      end
+    else
+      render json: {
+        errors: ["Must be logged in as admin to view other's profile"],
+      }
+    end
   end
 
   # POST /signup
@@ -27,7 +53,6 @@ class UsersController < ApplicationController
 
     if @user.save
       token = encode_token({user_id: @user.id})
-      session[:user_id] = @user.id
       render json: {
         user: {
           username: @user.username,
@@ -89,7 +114,6 @@ class UsersController < ApplicationController
     end
 
     token = encode_token({user_id: @user.id})
-    session[:user_id] = @user.id
 
     @user.set_flag('LAST_LOGIN', Time.now)
     @user.clear_flag('LAST_LOGIN')
@@ -106,14 +130,11 @@ class UsersController < ApplicationController
   private
   # Use callbacks to share common setup or constraints between actions.
   def set_user
-    @user = User.find(session[:user_id])
+    @user = verify_login
   end
 
   # Only allow a trusted parameter "white list" through.
   def user_params
     params.require(:user).permit([:username, :email, :password, :usernameOrEmail])
   end
-
-  #def auto_login
-  #end
 end

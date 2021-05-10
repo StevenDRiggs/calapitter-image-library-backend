@@ -10,7 +10,7 @@ class User < ApplicationRecord
   validates :username, length: {minimum: 2}
   validates :email, email: true
   validates :password, length: {minimum: 3}, presence: true, on: :create
-  validates :password, length: {minimum: 3}, presence: true, on: :update, unless: -> {:password.blank?}
+  validates :password, length: {minimum: 3}, presence: true, on: :update, unless: ->(record) {record.password.blank?}
 
 
   # class methods

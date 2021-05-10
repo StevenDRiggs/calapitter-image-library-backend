@@ -267,7 +267,7 @@ RSpec.describe 'User requests', type: :request do
       before(:example) do
         @user = User.first
 
-        @user.update(is_admin: true)
+        @user.update!(is_admin: true)
 
         travel_to(Time.new(2021, 1, 1))
         post '/login', params: {
@@ -279,50 +279,243 @@ RSpec.describe 'User requests', type: :request do
         travel_back
 
         @valid_headers = {
-          'Authentication' => JSON.parse(response.body)['token'],
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
         }
       end
 
-      fit 'renders json for all users' do
+      after(:example) do
+        @user.update!(is_admin: false)
+      end
+
+      it 'renders json for all users' do
         get '/users', headers: @valid_headers
 
         resp_json = JSON.parse(response.body)
         expect(resp_json.length).to be(3)
-        binding.pry
         resp_json.each.with_index do |user, i|
           expect(user).to include('username' => "user#{i}", 'email' => "user#{i}@email.com", 'is_admin' => (i == 0 ? true : false))
+          expect(user).to include('flags')
+
+          expect(user['flags']).to include('HISTORY')
+          history_flag = user['flags']['HISTORY']
+          if i == 0
+            expect(history_flag.length).to be(1)
+            expect(history_flag[0][0]).to eq('LAST_LOGIN')
+            expect(Time.parse(history_flag[0][1])).to eq(Time.new(2021, 1, 1))
+            expect(Time.parse(history_flag[0][2])).to eq(Time.new(2021, 1, 1))
+          else
+            expect(history_flag.length).to be(0)
+          end
         end
       end
 
       it 'does not render errors' do
+        get '/users', headers: @valid_headers
+
+        expect(JSON.parse(response.body)).to_not include('errors')
       end
     end
 
     context 'when logged in as non-admin' do
-      it 'succeeds' do
+      before(:example) do
+        @user = User.last
+
+        travel_to(Time.new(2021, 1, 1))
+        post '/login', params: {
+          user: {
+            usernameOrEmail: @user.username,
+            password: 'pass',
+          }
+        }
+        travel_back
+
+        @valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
       end
 
       it 'renders limited json for all users' do
+        get '/users', headers: @valid_headers
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json.length).to be(3)
+        resp_json.each.with_index do |user, i|
+          expect(user).to include('username' => "user#{i}")
+          expect(user).to_not include('email', 'is_admin', 'flags')
+        end
       end
 
       it 'does not render errors' do
+        get '/users', headers: @valid_headers
+
+        expect(JSON.parse(response.body)).to_not include('errors')
       end
     end
 
     context 'when not logged in' do
-      it 'is forbidden' do
-      end
-
       it 'does not render json for all users' do
+        get '/users'
+
+        expect(JSON.parse(response.body)).to_not be_an(Array)
       end
 
       it 'renders errors' do
+        get '/users'
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('errors')
+        expect(resp_json['errors']).to include('Must be logged in')
       end
     end
   end
 
-  #  describe 'GET /users/:id' do
-  #  end
+  describe 'GET /users/:id' do
+    before(:context) do
+      2.times.with_index do |i|
+        User.create!(username: "user#{i}", email: "user#{i}@email.com", password: 'pass')
+      end
+
+      User.first.update!(is_admin: true)
+
+      @admin_user = User.first
+      @non_admin_user = User.last
+    end
+
+    after(:context) do
+      User.destroy_all
+    end
+
+    context 'when logged in as admin' do
+      before(:example) do
+        travel_to(Time.new(2021, 1, 1))
+        post '/login', params: {
+          user: {
+            usernameOrEmail: @admin_user.username,
+            password: 'pass',
+          }
+        }
+        travel_back
+
+        @valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+      end
+
+      it 'renders json for user' do
+        get "/users/#{@admin_user.id}", headers: @valid_headers
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('user')
+        expect(resp_json['user']).to include('username' => @admin_user.username, 'email' => @admin_user.email, 'is_admin' => @admin_user.is_admin)
+        expect(resp_json['user']).to include('flags')
+        expect(resp_json['user']['flags']).to include('HISTORY')
+        user_history = resp_json['user']['flags']['HISTORY']
+        expect(user_history.length).to be(1)
+        expect(user_history[0][0]).to eq('LAST_LOGIN')
+        expect(Time.parse(user_history[0][1])).to eq(Time.new(2021, 1, 1))
+        expect(Time.parse(user_history[0][2])).to eq(Time.new(2021, 1, 1))
+        expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+
+        get "/users/#{@non_admin_user.id}", headers: @valid_headers
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('user')
+        expect(resp_json['user']).to include('username' => @non_admin_user.username, 'email' => @non_admin_user.email, 'is_admin' => @non_admin_user.is_admin)
+        expect(resp_json['user']).to include('flags')
+        expect(resp_json['user']['flags']).to include('HISTORY')
+        user_history = resp_json['user']['flags']['HISTORY']
+        expect(user_history.length).to be(0)
+        expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+      end
+
+      it 'does not render errors' do
+        get "/users/#{@admin_user.id}", headers: @valid_headers
+
+        expect(JSON.parse(response.body)).to_not include('errors')
+
+        get "/users/#{@non_admin_user.id}", headers: @valid_headers
+
+        expect(JSON.parse(response.body)).to_not include('errors')
+      end
+    end
+
+    context 'when logged in as non-admin' do
+      context 'when viewing own page' do
+        before(:example) do
+          travel_to(Time.new(2021, 1, 1))
+          post '/login', params: {
+            user: {
+              usernameOrEmail: @non_admin_user.username,
+              password: 'pass',
+            }
+          }
+          travel_back
+
+          @valid_headers = {
+            'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+          }
+        end
+
+        it 'renders json for user' do
+          get "/users/#{@non_admin_user.id}", headers: @valid_headers
+
+          resp_json = JSON.parse(response.body)
+          expect(resp_json).to include('user')
+          expect(resp_json['user']).to include('username' => @non_admin_user.username, 'email' => @non_admin_user.email, 'is_admin' => @non_admin_user.is_admin)
+          expect(resp_json['user']).to include('flags')
+          expect(resp_json['user']['flags']).to include('HISTORY')
+          user_history = resp_json['user']['flags']['HISTORY']
+          expect(user_history.length).to be(1)
+          expect(user_history[0][0]).to eq('LAST_LOGIN')
+          expect(Time.parse(user_history[0][1])).to eq(Time.new(2021, 1, 1))
+          expect(Time.parse(user_history[0][2])).to eq(Time.new(2021, 1, 1))
+          expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+        end
+
+        it 'does not render errors' do
+          get "/users/#{@non_admin_user.id}", headers: @valid_headers
+
+          expect(JSON.parse(response.body)).to_not include('errors')
+        end
+      end
+
+      context "when viewing other's page" do
+        it 'does not render json for user' do
+          get "/users/#{@admin_user.id}", headers: @valid_headers
+
+          expect(JSON.parse(response.body)).to_not include('user')
+        end
+
+        it 'renders errors' do
+          get "/users/#{@admin_user.id}", headers: @valid_headers
+
+          expect(JSON.parse(response.body)).to include('errors' => ["Must be logged in as admin to view other's profile"])
+        end
+      end
+    end
+
+    context 'when not logged in' do
+      it 'does not render json for user' do
+        get "/users/#{@non_admin_user.id}"
+
+        expect(JSON.parse(response.body)).to_not include('user')
+
+        get "/users/#{@admin_user.id}"
+
+        expect(JSON.parse(response.body)).to_not include('user')
+      end
+
+      it 'renders errors' do
+        get "/users/#{@non_admin_user.id}"
+
+        expect(JSON.parse(response.body)).to include('errors' => ["Must be logged in as admin to view other's profile"])
+
+        get "/users/#{@admin_user.id}"
+
+        expect(JSON.parse(response.body)).to include('errors' => ["Must be logged in as admin to view other's profile"])
+      end
+    end
+  end
   #
   #  describe 'POST /signup' do
   #  end

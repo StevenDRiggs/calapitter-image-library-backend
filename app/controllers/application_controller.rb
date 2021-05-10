@@ -15,7 +15,7 @@ class ApplicationController < ActionController::API
       begin
         JWT.decode(token, ENV['SECRET_KEY_BASE'], 'HS256')
       rescue JWT::DecodeError => error
-        render json: {errors: [error]} and return
+        nil
       end
     end
   end
@@ -30,7 +30,7 @@ class ApplicationController < ActionController::API
   def is_admin?
     verify_login
 
-    render json: {errors: ['Must be logged in as admin']} unless @user && @user.is_admin
+    @user && @user.is_admin
   end
 end
 
