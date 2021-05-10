@@ -516,10 +516,85 @@ RSpec.describe 'User requests', type: :request do
       end
     end
   end
-  #
-  #  describe 'POST /signup' do
-  #  end
-  #
+
+  describe 'POST /signup' do
+    context 'with valid params' do
+      let(:valid_params) {
+        {
+          user: {
+            username: 'new user',
+            email: 'new@user.com',
+            password: 'pass',
+          }
+        }
+      }
+
+      it 'creates new user' do
+        expect {
+          post '/signup', params: valid_params
+        }.to change {
+          User.all.length
+        }.by(1)
+      end
+
+      it 'renders json for new user with JWT' do
+        travel_to(Time.new(2021, 1, 1))
+        post '/signup', params: valid_params
+        travel_back
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('user', 'token')
+        expect(resp_json['user']).to include('username' => valid_params[:user][:username], 'email' => valid_params[:user][:email], 'is_admin' => false)
+        expect(resp_json['user']).to include('flags')
+        expect(resp_json['user']['flags']).to include('HISTORY')
+        user_history = resp_json['user']['flags']['HISTORY']
+        expect(user_history.length).to be(1)
+        expect(user_history[0][0]).to eq('LAST_LOGIN')
+        expect(Time.parse(user_history[0][1])).to eq(Time.new(2021, 1, 1))
+        expect(Time.parse(user_history[0][2])).to eq(Time.new(2021, 1, 1))
+        expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+      end
+
+      it 'does not render errors' do
+        post '/signup', params: valid_params
+
+        expect(JSON.parse(response.body)).to_not include('errors')
+      end
+    end
+
+    context 'with invalid params' do
+      let(:invalid_params) {
+        {
+          user: {
+            username: '',
+            email: '',
+            password: '',
+          }
+        }
+      }
+
+      it 'does not create new user' do
+        expect {
+          post '/signup', params: invalid_params
+        }.to_not change {
+          User.all.length
+        }
+      end
+
+      it 'does not render json for user with JWT' do
+        post '/signup', params: invalid_params
+
+        expect(JSON.parse(response.body)).to_not include('user', 'token')
+      end
+
+      it 'renders errors' do
+        post '/signup', params: invalid_params
+
+        expect(JSON.parse(response.body)).to include('errors')
+      end
+    end
+  end
+
   #  describe 'PATCH/PUT /users/:id' do
   #  end
   #

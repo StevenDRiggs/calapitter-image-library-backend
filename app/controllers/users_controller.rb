@@ -49,17 +49,16 @@ class UsersController < ApplicationController
     #color = colors.sample
 
     #@user.avatar.attach(io: File.open("avatar_svgs/#{color}.svg"), filename: "#{color}.svg")
-    @user.avatar.attach(io: File.open("Steven_Riggs_photo.jpg"), filename: "Steven_Riggs_photo.jpg")
+    #@user.avatar.attach(io: File.open("Steven_Riggs_photo.jpg"), filename: "Steven_Riggs_photo.jpg")
 
     if @user.save
+      @user.set_flag('LAST_LOGIN', Time.now)
+      @user.clear_flag('LAST_LOGIN')
+
       token = encode_token({user_id: @user.id})
+
       render json: {
-        user: {
-          username: @user.username,
-          email: @user.email,
-          is_admin: @user.is_admin,
-          avatar: @user.avatar.download,
-        },
+        user: @user,
         token: token,
       }, status: :created, location: @user
     else
