@@ -31,7 +31,7 @@ RSpec.describe 'User requests', type: :request do
 
     context 'with valid user params' do
       it 'renders json for user with JWT' do
-        travel_to(Time.new(2021, 1, 1))
+        travel_to(Time.new(2021, 2, 2))
         post '/login', params: @valid_params
         travel_back
 
@@ -43,8 +43,8 @@ RSpec.describe 'User requests', type: :request do
         history_flag = JSON.parse(response.body)['user']['flags']['HISTORY']
         expect(history_flag.length).to be(1)
         expect(history_flag[0][0]).to eq('LAST_LOGIN')
-        expect(Time.parse(history_flag[0][1])).to eq(Time.new(2021, 1, 1))
-        expect(Time.parse(history_flag[0][2])).to eq(Time.new(2021, 1, 1))
+        expect(Time.parse(history_flag[0][1])).to eq(Time.new(2021, 2, 2))
+        expect(Time.parse(history_flag[0][2])).to eq(Time.new(2021, 2, 2))
 
         expect(JSON.parse(response.body)['user']).to_not include('id', 'password_digest', 'created_at', 'updated_at')
       end
@@ -160,7 +160,7 @@ RSpec.describe 'User requests', type: :request do
       context 'when user is SUSPENDED' do
         context 'when SUSPENSION_CLEAR_DATE has passed' do
           before(:example) do
-            travel_to(Time.new(2021, 1, 1))
+            travel_to(Time.new(2021, 2, 2))
 
             @user.set_flag('SUSPENDED', true)
             @user.set_flag('SUSPENSION_CLEAR_DATE', Time.now.prev_day)
@@ -177,7 +177,7 @@ RSpec.describe 'User requests', type: :request do
           end
 
           it 'renders json for user with JWT' do
-            travel_to(Time.new(2021, 1, 1))
+            travel_to(Time.new(2021, 2, 2))
             post '/login', params: @valid_params
             travel_back
 
@@ -188,24 +188,24 @@ RSpec.describe 'User requests', type: :request do
             expect(JSON.parse(response.body)['user']['flags']).to include('HISTORY')
             history_flag = JSON.parse(response.body)['user']['flags']['HISTORY']
             expect(history_flag.length).to be(3)
-            
+
             expect(history_flag[0][0]).to eq('SUSPENDED')
             expect(history_flag[0][1]).to be(true)
-            expect(Time.parse(history_flag[0][2])).to eq(Time.new(2021, 1, 1))
+            expect(Time.parse(history_flag[0][2])).to eq(Time.new(2021, 2, 2))
 
             expect(history_flag[1][0]).to eq('SUSPENSION_CLEAR_DATE')
-            expect(Time.parse(history_flag[1][1])).to eq(Time.new(2020, 12, 31))
-            expect(Time.parse(history_flag[1][2])).to eq(Time.new(2021, 1, 1))
+            expect(Time.parse(history_flag[1][1])).to eq(Time.new(2021, 2, 1))
+            expect(Time.parse(history_flag[1][2])).to eq(Time.new(2021, 2, 2))
 
             expect(history_flag[2][0]).to eq('LAST_LOGIN')
-            expect(Time.parse(history_flag[2][1])).to eq(Time.new(2021, 1, 1))
-            expect(Time.parse(history_flag[2][2])).to eq(Time.new(2021, 1, 1))
+            expect(Time.parse(history_flag[2][1])).to eq(Time.new(2021, 2, 2))
+            expect(Time.parse(history_flag[2][2])).to eq(Time.new(2021, 2, 2))
 
             expect(JSON.parse(response.body)['user']).to_not include('id', 'password_digest', 'created_at', 'updated_at')
           end
 
           it 'does not render errors' do
-            travel_to(Time.new(2021, 1, 1))
+            travel_to(Time.new(2021, 2, 2))
             post '/login', params: @valid_params
             travel_back
 
@@ -215,7 +215,7 @@ RSpec.describe 'User requests', type: :request do
 
         context 'when SUSPENSION_CLEAR_DATE has not passed' do
           before(:context) do
-            travel_to(Time.new(2021, 1, 1))
+            travel_to(Time.new(2021, 2, 2))
 
             @user.set_flag('SUSPENDED', true)
             @user.set_flag('SUSPENSION_CLEAR_DATE', Time.now.next_day)
@@ -224,7 +224,7 @@ RSpec.describe 'User requests', type: :request do
           end
 
           it 'does not render json for user' do
-            travel_to(Time.new(2021, 1, 1))
+            travel_to(Time.new(2021, 2, 2))
             post '/login', params: @invalid_params
             travel_back
 
@@ -232,7 +232,7 @@ RSpec.describe 'User requests', type: :request do
           end
 
           it 'does not return JWT' do
-            travel_to(Time.new(2021, 1, 1))
+            travel_to(Time.new(2021, 2, 2))
             post '/login', params: @invalid_params
             travel_back
 
@@ -240,7 +240,7 @@ RSpec.describe 'User requests', type: :request do
           end
 
           it 'renders errors' do
-            travel_to(Time.new(2021, 1, 1))
+            travel_to(Time.new(2021, 2, 2))
             post '/login', params: @invalid_params
             travel_back
 
@@ -269,7 +269,7 @@ RSpec.describe 'User requests', type: :request do
 
         @user.update!(is_admin: true)
 
-        travel_to(Time.new(2021, 1, 1))
+        travel_to(Time.new(2021, 2, 2))
         post '/login', params: {
           user: {
             usernameOrEmail: @user.username,
@@ -301,8 +301,8 @@ RSpec.describe 'User requests', type: :request do
           if i == 0
             expect(history_flag.length).to be(1)
             expect(history_flag[0][0]).to eq('LAST_LOGIN')
-            expect(Time.parse(history_flag[0][1])).to eq(Time.new(2021, 1, 1))
-            expect(Time.parse(history_flag[0][2])).to eq(Time.new(2021, 1, 1))
+            expect(Time.parse(history_flag[0][1])).to eq(Time.new(2021, 2, 2))
+            expect(Time.parse(history_flag[0][2])).to eq(Time.new(2021, 2, 2))
           else
             expect(history_flag.length).to be(0)
           end
@@ -320,7 +320,7 @@ RSpec.describe 'User requests', type: :request do
       before(:example) do
         @user = User.last
 
-        travel_to(Time.new(2021, 1, 1))
+        travel_to(Time.new(2021, 2, 2))
         post '/login', params: {
           user: {
             usernameOrEmail: @user.username,
@@ -387,7 +387,7 @@ RSpec.describe 'User requests', type: :request do
 
     context 'when logged in as admin' do
       before(:example) do
-        travel_to(Time.new(2021, 1, 1))
+        travel_to(Time.new(2021, 2, 2))
         post '/login', params: {
           user: {
             usernameOrEmail: @admin_user.username,
@@ -412,8 +412,8 @@ RSpec.describe 'User requests', type: :request do
         user_history = resp_json['user']['flags']['HISTORY']
         expect(user_history.length).to be(1)
         expect(user_history[0][0]).to eq('LAST_LOGIN')
-        expect(Time.parse(user_history[0][1])).to eq(Time.new(2021, 1, 1))
-        expect(Time.parse(user_history[0][2])).to eq(Time.new(2021, 1, 1))
+        expect(Time.parse(user_history[0][1])).to eq(Time.new(2021, 2, 2))
+        expect(Time.parse(user_history[0][2])).to eq(Time.new(2021, 2, 2))
         expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
 
         get "/users/#{@non_admin_user.id}", headers: @valid_headers
@@ -442,7 +442,7 @@ RSpec.describe 'User requests', type: :request do
     context 'when logged in as non-admin' do
       context 'when viewing own page' do
         before(:example) do
-          travel_to(Time.new(2021, 1, 1))
+          travel_to(Time.new(2021, 2, 2))
           post '/login', params: {
             user: {
               usernameOrEmail: @non_admin_user.username,
@@ -467,8 +467,8 @@ RSpec.describe 'User requests', type: :request do
           user_history = resp_json['user']['flags']['HISTORY']
           expect(user_history.length).to be(1)
           expect(user_history[0][0]).to eq('LAST_LOGIN')
-          expect(Time.parse(user_history[0][1])).to eq(Time.new(2021, 1, 1))
-          expect(Time.parse(user_history[0][2])).to eq(Time.new(2021, 1, 1))
+          expect(Time.parse(user_history[0][1])).to eq(Time.new(2021, 2, 2))
+          expect(Time.parse(user_history[0][2])).to eq(Time.new(2021, 2, 2))
           expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
         end
 
@@ -538,7 +538,7 @@ RSpec.describe 'User requests', type: :request do
       end
 
       it 'renders json for new user with JWT' do
-        travel_to(Time.new(2021, 1, 1))
+        travel_to(Time.new(2021, 2, 2))
         post '/signup', params: valid_params
         travel_back
 
@@ -550,8 +550,8 @@ RSpec.describe 'User requests', type: :request do
         user_history = resp_json['user']['flags']['HISTORY']
         expect(user_history.length).to be(1)
         expect(user_history[0][0]).to eq('LAST_LOGIN')
-        expect(Time.parse(user_history[0][1])).to eq(Time.new(2021, 1, 1))
-        expect(Time.parse(user_history[0][2])).to eq(Time.new(2021, 1, 1))
+        expect(Time.parse(user_history[0][1])).to eq(Time.new(2021, 2, 2))
+        expect(Time.parse(user_history[0][2])).to eq(Time.new(2021, 2, 2))
         expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
       end
 
@@ -595,9 +595,721 @@ RSpec.describe 'User requests', type: :request do
     end
   end
 
-  #  describe 'PATCH/PUT /users/:id' do
-  #  end
-  #
+  describe 'PATCH/PUT /users/:id' do
+    before(:context) do
+      travel_to(Time.new(2021, 1, 1))
+      @admin_user = User.create!(username: 'old admin', email: 'old@admin.com', password: 'old admin pass', is_admin: true)
+      @non_admin_user = User.create!(username: 'old non-admin', email: 'old@nonadmin.com', password: 'old non-admin pass')
+      travel_back
+    end
+
+    after(:context) do
+      @admin_user.destroy
+      @non_admin_user.destroy
+    end
+
+    context 'when logged in as admin' do
+      before(:context) do
+        travel_to(Time.new(2021, 2, 2))
+        post '/login', params: {
+          user: {
+            usernameOrEmail: @admin_user.username,
+            password: 'old admin pass',
+          }
+        }
+        travel_back
+
+        @valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+      end
+
+      after(:context) do
+        remove_instance_variable(:@valid_headers)
+      end
+
+      context 'when updating own profile' do
+        context 'when updating username, email, password' do
+          let(:update_params) {
+            {
+              username: 'new username',
+              email: 'new@email.com',
+              password: 'new pass',
+            }
+          }
+
+          it 'updates user profile' do
+            expect {
+              travel_to(Time.new(2021, 2, 2))
+              patch "/users/#{@admin_user.id}", params: {
+                user: {
+                  **update_params,
+                },
+              }, headers: @valid_headers
+              travel_back
+
+              @admin_user.reload
+            }.to change {
+              @admin_user.password_digest
+            }
+
+            expect(@admin_user.username).to eq('new username')
+            expect(@admin_user.email).to eq('new@email.com')
+            expect(@admin_user.updated_at).to eq(Time.new(2021, 2, 2))
+          end
+
+          it 'renders json for updated user' do
+            patch "/users/#{@admin_user.id}", params: {
+              user: {
+                **update_params,
+              },
+            }, headers: @valid_headers
+
+            @admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('user')
+            expect(resp_json['user']).to include('username' => @admin_user.username, 'email' => @admin_user.email, 'is_admin' => @admin_user.is_admin, 'flags' => @admin_user.flags)
+            expect(resp_json).to_not include('id', 'created_at', 'updated_at')
+          end
+
+          it 'does not render errors' do
+            patch "/users/#{@admin_user.id}", params: {
+              user: {
+                **update_params,
+              },
+            }, headers: @valid_headers
+
+            @admin_user.reload
+
+            expect(JSON.parse(response.body)['user']).to_not include('errors')
+          end
+        end
+
+        context 'when updating flags through set_flag or clear_flag' do
+          it 'updates user profile' do
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@admin_user.id}", params: {
+              user: {
+                setFlags: [['TEST_FLAG', true]],
+              },
+            }, headers: @valid_headers
+            travel_back
+
+            @admin_user.reload
+
+            expect(@admin_user.flags).to include('TEST_FLAG' => 'true')
+            expect(@admin_user.flags).to include('HISTORY')
+            user_history = @admin_user.flags['HISTORY']
+            expect(user_history.map {|entry| entry[0]}).to include('LAST_LOGIN', 'TEST_FLAG')
+            expect(user_history.map {|entry| Time.parse(entry[2])}).to all(eq(Time.new(2021, 2, 2)))
+
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@admin_user.id}", params: {
+              user: {
+                clearFlags: ['TEST_FLAG'],
+              },
+            }, headers: @valid_headers
+            travel_back
+
+            @admin_user.reload
+
+            expect(@admin_user.flags).to_not include('TEST_FLAG')
+            expect(@admin_user.flags).to include('HISTORY')
+            user_history = @admin_user.flags['HISTORY']
+            expect(user_history.map {|entry| entry[0]}).to include('LAST_LOGIN', 'TEST_FLAG')
+          end
+
+          it 'renders json for updated user' do
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@admin_user.id}", params: {
+              user: {
+                setFlags: [['TEST_FLAG', true]],
+              },
+            }, headers: @valid_headers
+            travel_back
+
+            @admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('user')
+            expect(resp_json['user']).to include('username' => @admin_user.username, 'email' => @admin_user.email, 'is_admin' => @admin_user.is_admin, 'flags' => @admin_user.flags)
+            expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@admin_user.id}", params: {
+              user: {
+                clearFlags: ['TEST_FLAG'],
+              },
+            }, headers: @valid_headers
+            travel_back
+
+            @admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('user')
+            expect(resp_json['user']).to include('username' => @admin_user.username, 'email' => @admin_user.email, 'is_admin' => @admin_user.is_admin, 'flags' => @admin_user.flags)
+            expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+          end
+
+          it 'does not render errors' do
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@admin_user.id}", params: {
+              user: {
+                setFlags: [['TEST_FLAG', true]],
+              },
+            }, headers: @valid_headers
+            travel_back
+
+            expect(JSON.parse(response.body)).to_not include('errors')
+
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@admin_user.id}", params: {
+              user: {
+                clearFlags: ['TEST_FLAG'],
+              },
+            }, headers: @valid_headers
+            travel_back
+
+            expect(JSON.parse(response.body)).to_not include('errors')
+          end
+
+          it 'does not allow modifying flags directly' do
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@admin_user.id}", params: {
+              user: {
+                flags: ['TEST_FLAG', true],
+              },
+            }, headers: @valid_headers
+
+            @admin_user.reload
+
+            expect(@admin_user.flags).to_not include('TEST_FLAG')
+          end
+        end
+
+        context 'when updating id, created_at, updated_at, or is_admin directly' do
+          let(:update_params) {
+            {
+              id: 9999,
+              created_at: Time.new(2015, 9, 17),
+              updated_at: Time.new(2016, 1, 17),
+              is_admin: false,
+            }
+          }
+
+          it 'does not update user profile' do
+            user_attrs = @admin_user.attributes.except('updated_at', 'flags')
+
+            patch "/users/#{@admin_user.id}", params: {
+              user: {
+                **update_params
+              },
+            }, headers: @valid_headers
+
+            @admin_user.reload
+
+            expect(@admin_user.attributes.except('updated_at', 'flags')).to eq(user_attrs)
+            expect(@admin_user.updated_at).to eq(Time.new(2021, 2, 2))
+          end
+
+          it 'renders json for non-updated user' do
+            patch "/users/#{@admin_user.id}", params: {
+              user: {
+                **update_params
+              },
+            }, headers: @valid_headers
+
+            @admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('user')
+            expect(resp_json['user']).to include('username' => @admin_user.username, 'email' => @admin_user.email, 'is_admin' => @admin_user.is_admin, 'flags' => @admin_user.flags)
+            expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+          end
+        end
+      end
+
+      context "when updating other's profile" do
+        context 'when updating username, email, password' do
+          let(:update_params) {
+            {
+              username: 'new username',
+              email: 'new@email.com',
+              password: 'new password',
+            }
+          }
+
+          it 'does not update user profile' do
+            user_attrs = @non_admin_user.attributes
+
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **update_params,
+              },
+            }, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            expect(@non_admin_user.attributes).to eq(user_attrs)
+          end
+
+          it 'renders json for non-updated user' do
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **update_params,
+              },
+            }, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('user')
+            expect(resp_json['user']).to include('username' => @non_admin_user.username, 'email' => @non_admin_user.email, 'is_admin' => @non_admin_user.is_admin, 'flags' => @non_admin_user.flags)
+            expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+          end
+
+          it 'renders errors' do
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **update_params,
+              },
+            }, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('errors')
+            expect(resp_json['errors']).to include('Update action forbidden')
+          end
+        end
+
+        context 'when updating flags via set_flag or clear_flag' do
+          let(:setFlags) {
+            {
+              setFlags: [['TEST_FLAG', true]],
+            }
+          }
+
+          let(:clearFlags) {
+            {
+              clearFlags: ['TEST_FLAG'],
+            }
+          }
+
+          it 'updates user profile' do
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **setFlags,
+              },
+            }, headers: @valid_headers
+            travel_back
+
+            @non_admin_user.reload
+
+            expect(@non_admin_user.flags).to include('TEST_FLAG' => 'true')
+            expect(@non_admin_user.flags).to include('HISTORY')
+            user_history = @non_admin_user.flags['HISTORY']
+            expect(user_history.map {|entry| entry[0]}).to include('TEST_FLAG')
+            expect(user_history.map {|entry| Time.parse(entry[2])}).to all(eq(Time.new(2021, 2, 2)))
+
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **clearFlags,
+              },
+            }, headers: @valid_headers
+            travel_back
+
+            @non_admin_user.reload
+
+            expect(@non_admin_user.flags).to_not include('TEST_FLAG')
+            expect(@non_admin_user.flags).to include('HISTORY')
+            user_history = @non_admin_user.flags['HISTORY']
+            expect(user_history.map {|entry| entry[0]}).to include('TEST_FLAG')
+          end
+
+          it 'renders json for updated user' do
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **setFlags,
+              },
+            }, headers: @valid_headers
+            travel_back
+
+            @non_admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('user')
+            expect(resp_json['user']).to include('username' => @non_admin_user.username, 'email' => @non_admin_user.email, 'is_admin' => @non_admin_user.is_admin, 'flags' => @non_admin_user.flags)
+            expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **clearFlags,
+              },
+            }, headers: @valid_headers
+            travel_back
+
+            @non_admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('user')
+            expect(resp_json['user']).to include('username' => @non_admin_user.username, 'email' => @non_admin_user.email, 'is_admin' => @non_admin_user.is_admin, 'flags' => @non_admin_user.flags)
+            expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+          end
+
+          it 'does not render errors' do
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **setFlags,
+              },
+            }, headers: @valid_headers
+            travel_back
+
+            expect(JSON.parse(response.body)).to_not include('errors')
+
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **clearFlags,
+              },
+            }, headers: @valid_headers
+            travel_back
+
+            expect(JSON.parse(response.body)).to_not include('errors')
+          end
+
+          it 'does not allow modifying flags directly' do
+            travel_to(Time.new(2021, 2, 2))
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                flags: ['TEST_FLAG', true],
+              },
+            }, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            expect(@non_admin_user.flags).to_not include('TEST_FLAG')
+          end
+        end
+
+        context 'when updating id, created_at, updated_at, or is_admin directly' do
+          let(:update_params) {
+            {
+              id: 9999,
+              created_at: Time.new(2015, 9, 17),
+              updated_at: Time.new(2016, 1, 17),
+              is_admin: false,
+            }
+          }
+
+          it 'does not update user profile' do
+            user_attrs = @non_admin_user.attributes
+
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **update_params
+              },
+            }, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            expect(@non_admin_user.attributes).to eq(user_attrs)
+          end
+
+          it 'renders json for non-updated user' do
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **update_params
+              },
+            }, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('user')
+            expect(resp_json['user']).to include('username' => @non_admin_user.username, 'email' => @non_admin_user.email, 'is_admin' => @non_admin_user.is_admin, 'flags' => @non_admin_user.flags)
+            expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+          end
+        end
+      end
+    end
+
+    context 'when logged in as non-admin' do
+      before(:context) do
+        travel_to(Time.new(2021, 2, 2))
+        post '/login', params: {
+          user: {
+            usernameOrEmail: @non_admin_user.username,
+            password: 'old non-admin pass',
+          }
+        }
+        travel_back
+
+        @valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+      end
+
+      after(:context) do
+        remove_instance_variable(:@valid_headers)
+      end
+
+      context 'when updating own profile' do
+        context 'when updating username, email, password' do
+          let(:update_params) {
+            {
+              username: 'new username',
+              email: 'new@email.com',
+              password: 'new pass',
+            }
+          }
+
+          it 'updates user profile' do
+            expect {
+              travel_to(Time.new(2021, 2, 2))
+              patch "/users/#{@non_admin_user.id}", params: {
+                user: {
+                  **update_params,
+                },
+              }, headers: @valid_headers
+              travel_back
+
+              @non_admin_user.reload
+            }.to change {
+              @non_admin_user.password_digest
+            }
+
+            expect(@non_admin_user.username).to eq('new username')
+            expect(@non_admin_user.email).to eq('new@email.com')
+            expect(@non_admin_user.updated_at).to eq(Time.new(2021, 2, 2))
+          end
+
+          it 'renders json for updated user' do
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **update_params,
+              },
+            }, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('user')
+            expect(resp_json['user']).to include('username' => @non_admin_user.username, 'email' => @non_admin_user.email, 'is_admin' => @non_admin_user.is_admin, 'flags' => @non_admin_user.flags)
+            expect(resp_json).to_not include('id', 'created_at', 'updated_at')
+          end
+
+          it 'does not render errors' do
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **update_params,
+              },
+            }, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            expect(JSON.parse(response.body)['user']).to_not include('errors')
+          end
+        end
+
+        context 'when updating flags via set_flag or clear_flag' do
+          let(:setFlags) {
+            {
+              user: {
+                setFlags: [['TEST_FLAG', true]],
+              },
+            }
+          }
+
+          let(:clearFlags) {
+            {
+              user: {
+                clearFlags: ['TEST_FLAG'],
+              },
+            }
+          }
+
+          it 'does not update user profile' do
+            expect {
+              patch "/users/#{@non_admin_user.id}", params: setFlags, headers: @valid_headers
+
+              @non_admin_user.reload
+            }.to_not change {
+              @non_admin_user
+            }
+
+            expect {
+              patch "/users/#{@non_admin_user.id}", params: clearFlags, headers: @valid_headers
+
+              @non_admin_user.reload
+            }.to_not change {
+              @non_admin_user
+            }
+          end
+
+          it 'renders json for non-updated user' do
+            patch "/users/#{@non_admin_user.id}", params: setFlags, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('user')
+            expect(resp_json['user']).to include('username' => @non_admin_user.username, 'email' => @non_admin_user.email, 'is_admin' => @non_admin_user.is_admin, 'flags' => @non_admin_user.flags)
+            expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+
+            patch "/users/#{@non_admin_user.id}", params: clearFlags, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('user')
+            expect(resp_json['user']).to include('username' => @non_admin_user.username, 'email' => @non_admin_user.email, 'is_admin' => @non_admin_user.is_admin, 'flags' => @non_admin_user.flags)
+            expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+          end
+
+          it 'renders errors' do
+            patch "/users/#{@non_admin_user.id}", params: setFlags, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('errors')
+            expect(resp_json['errors']).to include('Update action forbidden')
+
+            patch "/users/#{@non_admin_user.id}", params: clearFlags, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('errors')
+            expect(resp_json['errors']).to include('Update action forbidden')
+          end
+        end
+
+        context 'when updating id, created_at, updated_at, or is_admin directly' do
+          let(:update_params) {
+            {
+              id: 9999,
+              created_at: Time.new(2015, 9, 17),
+              updated_at: Time.new(2016, 1, 17),
+              is_admin: false,
+            }
+          }
+
+          it 'does not update user profile' do
+            user_attrs = @non_admin_user.attributes.except('updated_at', 'flags')
+
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **update_params
+              },
+            }, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            expect(@non_admin_user.attributes.except('updated_at', 'flags')).to eq(user_attrs)
+            expect(@non_admin_user.updated_at).to eq(Time.new(2021, 2, 2))
+          end
+
+          it 'renders json for non-updated user' do
+            patch "/users/#{@non_admin_user.id}", params: {
+              user: {
+                **update_params
+              },
+            }, headers: @valid_headers
+
+            @non_admin_user.reload
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('user')
+            expect(resp_json['user']).to include('username' => @non_admin_user.username, 'email' => @non_admin_user.email, 'is_admin' => @non_admin_user.is_admin, 'flags' => @non_admin_user.flags)
+            expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+          end
+        end
+
+        context "when updating other's profile" do
+          let(:update_params) {
+            {
+              user: {
+                username: 'new username',
+                email: 'new@email.com',
+                password: 'new pass',
+                setFlags: [['TEST_FLAG', true]],
+              }
+            }
+          }
+
+          it 'does not update user profile' do
+            expect {
+              patch "/users/#{@admin_user.id}", params: update_params, headers: @valid_headers
+
+              @admin_user.reload
+            }.to_not change {
+              @admin_user
+            }
+          end
+
+          it 'does not render json for user' do
+            patch "/users/#{@admin_user.id}", params: update_params, headers: @valid_headers
+
+            expect(JSON.parse(response.body)).to_not include('user')
+          end
+
+          it 'renders errors' do
+            patch "/users/#{@admin_user.id}", params: update_params, headers: @valid_headers
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('errors')
+            expect(resp_json['errors']).to include('Update action forbidden')
+          end
+        end
+      end
+    end
+
+    context 'when not logged in' do
+      let(:update_params) {
+        {
+          user: {
+            username: 'new username',
+            email: 'new@email.com',
+            password: 'new pass',
+            setFlags: [['TEST_FLAG', true]],
+          }
+        }
+      }
+
+      it 'does not update user profile' do
+        expect {
+          patch "/users/#{@admin_user.id}", params: update_params
+
+          @admin_user.reload
+        }.to_not change {
+          @admin_user
+        }
+      end
+
+      it 'does not render json for user' do
+        patch "/users/#{@admin_user.id}", params: update_params
+
+        expect(JSON.parse(response.body)).to_not include('user')
+      end
+
+      it 'renders errors' do
+        patch "/users/#{@admin_user.id}", params: update_params
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('errors')
+        expect(resp_json['errors']).to include('Update action forbidden')
+      end
+    end
+  end
+
   #  describe 'DELETE /users/:id' do
   #  end
 end

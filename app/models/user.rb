@@ -33,15 +33,23 @@ class User < ApplicationRecord
     super(options)
   end
 
-  def set_flag(flag, value)
+  def set_flag_no_update(flag, value)
     self.flags[flag] = value
     self.flags['HISTORY'] << [flag, value, Time.now]
+  end
+
+  def set_flag(flag, value)
+    self.set_flag_no_update(flag, value)
 
     self.save
   end
 
-  def clear_flag(flag)
+  def clear_flag_no_update(flag)
     self.flags = self.flags.except(flag)
+  end
+
+  def clear_flag(flag)
+    self.clear_flag_no_update(flag)
 
     self.save(validate: false)
   end

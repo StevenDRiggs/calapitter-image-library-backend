@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  before_action :set_user, only: [:show, :destroy]
+  before_action :set_user, only: [:show, :update, :destroy]
 
   #RESTful routes
 
@@ -68,15 +68,58 @@ class UsersController < ApplicationController
     end
   end
 
-  # PATCH/PUT /users/1
+  # PATCH/PUT /users/:id
   def update
-    if @user.update(user_params)
-      render json: @user
-    else
-      render json: {
-        errors: @user.errors.full_messages, status: :unprocessable_entity,
-      }
+    @output = {
+      user: nil,
+      errors: nil,
+    }
+
+    @u_p = user_params.to_h
+
+    begin
+      update_user = User.find(params[:id])
+    rescue ActiveRecord::RecordNotFound => error
+      @output[:errors] = error
     end
+
+    if @u_p.include?('username') || @u_p.include?('email') || @u_p.include?('password')
+      @output[:errors] = (@output[:errors] ? @output[:errors] + ['Update action forbidden'] : ['Update action forbidden']) unless @user == update_user
+    end
+
+    if @u_p.include?('setFlags')
+      @output[:errors] = @output[:errors] ? @output[:errors] + ['Update action forbidden'] : ['Update action forbidden'] unless is_admin?
+
+      # NOTE: this may break when GitHub issue #23640 is fixed
+      for i in (0...@u_p[:setFlags].length).step(2) do
+        update_user.set_flag_no_update(@u_p[:setFlags][i], @u_p[:setFlags][i + 1])
+      end
+
+      @u_p = @u_p.except(:setFlags)
+    end
+
+    if @u_p && @u_p.include?('clearFlags')
+      @output[:errors] = @output[:errors] ? @output[:errors] + ['Update action forbidden'] : ['Update action forbidden'] unless is_admin?
+
+      @u_p[:clearFlags].each do |flag|
+        update_user.clear_flag_no_update(flag)
+      end
+
+      @u_p = @u_p.except(:clearFlags)
+    end
+
+    if (@output[:errors].nil? || !@output[:errors].include?('Update action forbidden')) && ((!@u_p.empty? && update_user.update(@u_p)) || (update_user.has_changes_to_save? && update_user.save))
+        @output[:user] = update_user
+    else
+      if is_admin? || @user == update_user
+        @output[:user] = User.find(params[:id])
+        @output[:errors] = @output[:errors] ? @output[:errors] + update_user.errors.full_messages : update_user.errors.full_messages
+      else
+        @output[:errors] = ['Update action forbidden']
+      end
+    end
+
+    render json: @output.reject {|key, value| value.nil?}
   end
 
   # DELETE /users/:id
@@ -134,6 +177,6 @@ class UsersController < ApplicationController
 
   # Only allow a trusted parameter "white list" through.
   def user_params
-    params.require(:user).permit([:username, :email, :password, :usernameOrEmail])
+    params.require(:user).permit([:username, :email, :password, :usernameOrEmail, setFlags: [], clearFlags: []])
   end
 end
