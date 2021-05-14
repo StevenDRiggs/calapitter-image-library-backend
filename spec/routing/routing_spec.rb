@@ -10,10 +10,6 @@ RSpec.describe 'routing', type: :routing do
     it 'routes post /login to users#login' do
       expect(post('/login')).to route_to('users#login')
     end
-
-    it 'routes post /logout to users#logout' do
-      expect(post('/logout')).to route_to('users#logout')
-    end
   end
 
   context 'RESTful routing' do

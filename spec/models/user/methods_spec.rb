@@ -51,11 +51,11 @@ RSpec.describe User do
       end
 
       it 'updates HISTORY' do
-        expect(@user.flags['HISTORY'].last).to include('TEST_FLAG')
+        user_history = @user.flags['HISTORY']
 
-        tf = @user.flags['HISTORY'].last['TEST_FLAG']
-        expect(tf[0]).to be(true)
-        expect(Time.parse(tf[1])).to eq(Time.new(2021, 1, 1))
+        expect(user_history.last[0]).to eq('TEST_FLAG')
+        expect(user_history.last[1]).to be(true)
+        expect(Time.parse(user_history.last[2])).to eq(Time.new(2021, 1, 1))
       end
     end
 
