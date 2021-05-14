@@ -124,7 +124,41 @@ class UsersController < ApplicationController
 
   # DELETE /users/:id
   def destroy
-    @user.destroy
+    @output = {}
+
+    begin
+      delete_user = User.find(params[:id])
+    rescue ActiveRecord::RecordNotFound => error
+      delete_user = nil
+      @output[:errors] = [error, 'User not found']
+    end
+
+    if delete_user
+      if is_admin? && delete_user.flags.include?('DELETE')
+        delete_username = delete_user.username
+
+        delete_user.destroy
+
+        @output[:user] = "#{delete_username} DELETED"
+      elsif is_admin? || @user == delete_user
+        delete_user.set_flag('DELETE', @user.username)
+
+        @output[:user] = delete_user
+      else
+        @output[:errors] ||= []
+        @output[:errors] += ['Delete action forbidden']
+      end
+    end
+
+    if @output[:errors]
+      render json: {
+        errors: @output[:errors],
+      }
+    else
+      render json: {
+        user: @output[:user],
+      }
+    end
   end
 
 

@@ -1310,6 +1310,228 @@ RSpec.describe 'User requests', type: :request do
     end
   end
 
-  #  describe 'DELETE /users/:id' do
-  #  end
+  describe 'DELETE /users/:id' do
+    before(:context) do
+      travel_to(Time.new(2021, 1, 1))
+      @admin_user = User.create!(username: 'admin user', email: 'admin@email.com', password: 'pass', is_admin: true)
+      @non_admin_user = User.create!(username: 'non-admin user', email: 'nonadmin@email.com', password: 'pass')
+      travel_back
+    end
+
+    after(:context) do
+      @admin_user ? @admin_user.destroy : nil
+      @non_admin_user ? @non_admin_user.destroy : nil
+    end
+
+    context 'when logged in as admin' do
+      before(:context) do
+        travel_to(Time.new(2021, 2, 2))
+        post '/login', params: {
+          user: {
+            usernameOrEmail: @admin_user.username,
+            password: 'pass',
+          },
+        }
+        travel_back
+
+        @valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+      end
+
+      after(:context) do
+        remove_instance_variable(:@valid_headers)
+      end
+
+      context 'when user is not flagged for DELETE' do
+        before(:example) do
+          @admin_user.reload
+          @non_admin_user.reload
+        end
+
+        after(:example) do
+          @admin_user.clear_flag('DELETE')
+          @non_admin_user.clear_flag('DELETE')
+        end
+
+        it 'does not delete user' do
+          expect {
+            delete "/users/#{@non_admin_user.id}", headers: @valid_headers
+          }.to_not change {
+            User.all.length
+          }
+        end
+
+        it 'flags user for DELETE' do
+          delete "/users/#{@non_admin_user.id}", headers: @valid_headers
+
+          @non_admin_user.reload
+
+          expect(@non_admin_user.flags).to include('DELETE' => @admin_user.username)
+        end
+
+        it 'renders json for updated user' do
+          delete "/users/#{@non_admin_user.id}", headers: @valid_headers
+
+          @non_admin_user.reload
+
+          resp_json = JSON.parse(response.body)
+          expect(resp_json).to include('user')
+          expect(resp_json['user']).to include('username' => @non_admin_user.username, 'email' => @non_admin_user.email, 'is_admin' => @non_admin_user.is_admin, 'flags' => @non_admin_user.flags)
+        end
+
+        it 'does not render errors' do
+          delete "/users/#{@non_admin_user.id}", headers: @valid_headers
+
+          expect(JSON.parse(response.body)).to_not include('errors')
+        end
+      end
+
+      context 'when user is flagged for delete' do
+        before(:example) do
+          @non_admin_user.set_flag('DELETE', @admin_user.username)
+        end
+
+        it 'deletes user' do
+          expect {
+            delete "/users/#{@non_admin_user.id}", headers: @valid_headers
+          }.to change {
+            User.all.length
+          }.by(-1)
+        end
+
+        it 'renders json success message' do
+          delete_username = @non_admin_user.username
+
+          delete "/users/#{@non_admin_user.id}", headers: @valid_headers
+
+          expect(JSON.parse(response.body)).to include('user' => "#{delete_username} DELETED")
+        end
+
+        it 'does not render errors' do
+          delete "/users/#{@non_admin_user.id}", headers: @valid_headers
+
+          expect(JSON.parse(response.body)).to_not include('errors')
+        end
+      end
+    end
+
+    context 'when logged in as non-admin' do
+      before(:context) do
+        post '/login', params: {
+          user: {
+            usernameOrEmail: @non_admin_user.username,
+            password: 'pass',
+          },
+        }
+
+        @valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+      end
+
+      after(:context) do
+        remove_instance_variable(:@valid_headers)
+      end
+
+      context 'when requesting DELETE own account' do
+        it 'does not delete user' do
+          expect {
+            delete "/users/#{@non_admin_user.id}", headers: @valid_headers
+          }.to_not change {
+            User.all.length
+          }
+        end
+
+        it 'flags user for DELETE' do
+          delete "/users/#{@non_admin_user.id}", headers: @valid_headers
+
+          @non_admin_user.reload
+
+          expect(@non_admin_user.flags).to include('DELETE' => @non_admin_user.username)
+        end
+
+        it 'renders json for updated user' do
+          delete "/users/#{@non_admin_user.id}", headers: @valid_headers
+
+          @non_admin_user.reload
+
+          resp_json = JSON.parse(response.body)
+          expect(resp_json).to include('user')
+          expect(resp_json['user']).to include('username' => @non_admin_user.username, 'email' => @non_admin_user.email, 'is_admin' => @non_admin_user.is_admin, 'flags' => @non_admin_user.flags)
+          expect(resp_json['user']).to_not include('id', 'created_at', 'updated_at')
+        end
+
+        it 'does not render errors' do
+          delete "/users/#{@non_admin_user.id}", headers: @valid_headers
+
+          expect(JSON.parse(response.body)).to_not include('errors')
+        end
+      end
+
+      context 'when requesting DELETE other account' do
+        it 'does not delete user' do
+          expect {
+            delete "/users/#{@admin_user.id}", headers: @valid_headers
+          }.to_not change {
+            User.all.length
+          }
+        end
+
+        it 'does not flag user for DELETE' do
+          expect {
+            delete "/users/#{@admin_user.id}", headers: @valid_headers
+          }.to_not change {
+            @admin_user.flags
+          }
+        end
+
+        it 'does not render json success message' do
+          delete "/users/#{@admin_user.id}", headers: @valid_headers
+
+          expect(JSON.parse(response.body)).to_not include('user')
+        end
+
+        it 'renders errors' do
+          delete "/users/#{@admin_user.id}", headers: @valid_headers
+
+          resp_json = JSON.parse(response.body)
+          expect(resp_json).to include('errors')
+          expect(resp_json['errors']).to include('Delete action forbidden')
+        end
+      end
+    end
+
+    context 'when not logged in' do
+      it 'does not delete user' do
+        expect {
+          delete "/users/#{@admin_user.id}"
+        }.to_not change {
+          User.all.length
+        }
+      end
+
+      it 'does not flag user for DELETE' do
+        expect {
+          delete "/users/#{@admin_user.id}"
+        }.to_not change {
+          @admin_user.flags
+        }
+      end
+
+      it 'does not render json success message' do
+        delete "/users/#{@admin_user.id}"
+
+        expect(JSON.parse(response.body)).to_not include('user')
+      end
+
+      it 'renders errors' do
+        delete "/users/#{@admin_user.id}"
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('errors')
+        expect(resp_json['errors']).to include('Delete action forbidden')
+      end
+    end
+  end
 end
