@@ -3,9 +3,16 @@ class StoredImagesController < ApplicationController
 
   # GET /stored_images
   def index
-    @stored_images = StoredImage.all.where(verified: true)
+    if is_admin?
+      @stored_images = StoredImage.all
 
-    render json: @stored_images
+      render json: {
+        images: {
+          verified: @stored_images.where(verified: true),
+          unverified: @stored_images.where(verified: false),
+        }
+      }
+    end
   end
 
   # GET /stored_images/1
