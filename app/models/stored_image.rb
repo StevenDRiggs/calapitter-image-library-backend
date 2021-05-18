@@ -30,4 +30,10 @@ class StoredImage < ApplicationRecord
     
     super(params)
   end
+
+  def as_json(options={})
+    options[:except] ||= [:id, :created_at, :updated_at]
+    options[:include] ||= [:user]
+    super(options)
+  end
 end

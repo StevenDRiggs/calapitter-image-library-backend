@@ -8,8 +8,9 @@ RSpec.describe StoredImagesController, type: :request do
       @non_admin_user = User.create!(username: 'non-admin username', email: 'non_admin@email.com', password: 'pass')
 
       5.times.with_index do |i|
-        si = StoredImage.create!(user: @admin_user, verified: true)
+        si = StoredImage.create!(user: @admin_user)
         si.attach_image(io: File.open(Rails.root.join('spec', 'models', 'Steven_Riggs_Photo.jpg')), filename: "verified_image#{i}", content_type: 'image/jpeg')
+        si.update!(verified: true)
 
         si2 = StoredImage.create!(user: @non_admin_user)
         si2.attach_image(io: File.open(Rails.root.join('spec', 'models', 'Steven_Riggs_Photo.jpg')), filename: "unverified_image#{i}", content_type: 'image/jpeg')
@@ -50,8 +51,9 @@ RSpec.describe StoredImagesController, type: :request do
         vsi = resp_json['images']['verified']
         stored_vsi = StoredImage.all.where(verified: true)
         expect(vsi.length).to eq(stored_vsi.length)
-        vsi.each.with_index do |vimgi, i|
-          #####expect(vimg).to include(
+        vsi.each.with_index do |vimg, i|
+          expect(vimg).to include('url' => stored_vsi[i].url, 'verified' => stored_vsi[i].verified)
+          expect(vimg).to include('user')
         end
       end
 
