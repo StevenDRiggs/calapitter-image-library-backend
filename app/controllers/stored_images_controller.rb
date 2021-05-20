@@ -5,21 +5,19 @@ class StoredImagesController < ApplicationController
   def index
     @stored_images = StoredImage.all
 
-    admin = is_admin?
-
-    if admin
-      render ({
+    if is_admin?
+      render json: {
         images: {
           verified: @stored_images.where(verified: true),
           unverified: @stored_images.where(verified: false),
-        },
-      }.as_json(is_admin: admin))
+        }
+      }
     else
-      render ({
+      render json: {
         images: {
-          verified: @stored_images.where(verified: true),
+          verified: @stored_images.where(verified: true)
         },
-      }.as_json(is_admin: admin))
+      }, include: [user: {only: :username}]
     end
   end
 

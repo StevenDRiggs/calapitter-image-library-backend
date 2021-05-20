@@ -73,7 +73,7 @@ RSpec.describe StoredImagesController, type: :request do
         end
       end
 
-      it 'renders full user information for each image' do
+      it 'renders user information for each image' do
         get '/stored_images', headers: @valid_headers
 
         vsi = JSON.parse(response.body)['images']['verified']
@@ -105,7 +105,7 @@ RSpec.describe StoredImagesController, type: :request do
         remove_instance_variable(:@valid_headers)
       end
 
-      fit 'renders json for all verified images' do
+      it 'renders json for all verified images' do
         get '/stored_images', headers: @valid_headers
 
         resp_json = JSON.parse(response.body)
@@ -119,25 +119,38 @@ RSpec.describe StoredImagesController, type: :request do
           expect(vimg).to include('url' => stored_vsi[i].url, 'user' => {
             'username' => @admin_user.username,
           })
-          expect(vimg['user']).to_not include('id')
         end
       end
 
       it 'does not render json for unverified images 'do
-      end
+        get '/stored_images', headers: @valid_headers
 
-      it 'renders partial user info for each image' do
+        expect(JSON.parse(response.body)['images']).to_not include('unverified')
       end
     end
 
     context 'when not logged in' do
       it 'renders json for all verified images' do
+        get '/stored_images'
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('images')
+        expect(resp_json['images']).to include('verified')
+
+        vsi = resp_json['images']['verified']
+        stored_vsi = StoredImage.all.where(verified: true)
+        expect(vsi.length).to eq(stored_vsi.length)
+        vsi.each.with_index do |vimg, i|
+          expect(vimg).to include('url' => stored_vsi[i].url, 'user' => {
+            'username' => @admin_user.username,
+          })
+        end
       end
 
       it 'does not render json for unverified images 'do
-      end
+        get '/stored_images'
 
-      it 'does not render user info for images' do
+        expect(JSON.parse(response.body)['images']).to_not include('unverified')
       end
     end
   end

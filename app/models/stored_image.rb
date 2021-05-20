@@ -31,19 +31,11 @@ class StoredImage < ApplicationRecord
     super(params)
   end
 
-  def as_json(options={}, is_admin=false)
+  def as_json(options={})
     options[:except] ||= [:id]
-    
-    if is_admin
-      options[:include] ||= [user: {
-        only: [:username, :id],
-      }]
-    else
-      options[:include] ||= [user: {
-        only: [:username],
-      }]
-    end
-
+    options[:include] ||= [user: {
+      only: [:username, :id],
+    }]
     super(options)
   end
 end
