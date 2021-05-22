@@ -155,7 +155,187 @@ RSpec.describe StoredImagesController, type: :request do
     end
   end
 
-  xdescribe 'GET /stored_images/:id' do
+  describe 'GET /stored_images/:id' do
+    before(:context) do
+      travel_to(Time.new(2021, 1, 1))
+      @admin_user = User.create!(username: 'admin username', email: 'admin@email.com', password: 'pass', is_admin: true)
+      @non_admin_user = User.create!(username: 'non-admin username', email: 'nonadmin@email.com', password: 'pass')
+
+      @verified_si = StoredImage.create!(user: @admin_user)
+      @verified_si.attach_image(io: File.open(Rails.root.join('spec', 'models', 'Steven_Riggs_Photo.jpg')), filename: 'verified_image', content_type: 'image/jpeg')
+      @verified_si.update!(verified: true)
+
+      @unverified_si = StoredImage.create!(user: @non_admin_user)
+      @unverified_si.attach_image(io: File.open(Rails.root.join('spec', 'models', 'Steven_Riggs_Photo.jpg')), filename: 'unverified_image', content_type: 'image/jpeg')
+      travel_back
+    end
+
+    after(:context) do
+      @verified_si.destroy
+      @unverified_si.destroy
+      @admin_user.destroy
+      @non_admin_user.destroy
+    end
+
+    context 'when logged in as admin' do
+      before(:example) do
+        post '/login', params: {
+          user: {
+            usernameOrEmail: @admin_user.username,
+            password: 'pass',
+          },
+        }
+
+        @valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+      end
+
+      after(:example) do
+        remove_instance_variable(:@valid_headers)
+      end
+
+      it 'renders json for image' do
+        get "/stored_images/#{@verified_si.id}", headers: @valid_headers
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('image')
+        expect(resp_json['image']).to include('url' => @verified_si.url, 'user' => {
+          'username' => @verified_si.user.username,
+          'id' => @verified_si.user.id,
+        })
+        expect(resp_json['image']).to include('created_at', 'updated_at')
+        expect([Time.parse(resp_json['image']['created_at']), Time.parse(resp_json['image']['updated_at'])]).to eq([@verified_si.created_at, @verified_si.updated_at])
+
+        get "/stored_images/#{@unverified_si.id}", headers: @valid_headers
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('image')
+        expect(resp_json['image']).to include('url' => @unverified_si.url, 'user' => {
+          'username' => @unverified_si.user.username,
+          'id' => @unverified_si.user.id,
+        })
+        expect(resp_json['image']).to include('created_at', 'updated_at')
+        expect([Time.parse(resp_json['image']['created_at']), Time.parse(resp_json['image']['updated_at'])]).to eq([@unverified_si.created_at, @unverified_si.updated_at])
+      end
+
+      it 'does not render errors' do
+        get "/stored_images/#{@verified_si.id}", headers: @valid_headers
+
+        expect(JSON.parse(response.body)).to_not include('errors')
+
+        get "/stored_images/#{@unverified_si.id}", headers: @valid_headers
+
+        expect(JSON.parse(response.body)).to_not include('errors')
+      end
+    end
+
+    context 'when logged in as non-admin' do
+      before(:context) do
+        post '/login', params: {
+          user: {
+            usernameOrEmail: @non_admin_user.username,
+            password: 'pass',
+          },
+        }
+
+        @valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+      end
+
+      after(:context) do
+        remove_instance_variable(:@valid_headers)
+      end
+
+      context 'when viewing own image' do
+        it 'renders limited json for image' do
+          get "/stored_images/#{@unverified_si.id}", headers: @valid_headers
+
+          resp_json = JSON.parse(response.body)
+          expect(resp_json).to include('image')
+          expect(resp_json['image']).to include('url' => @unverified_si.url, 'user' => {
+            'username' => @unverified_si.user.username,
+          })
+          expect(resp_json['image']).to include('created_at', 'updated_at')
+          expect([Time.parse(resp_json['image']['created_at']), Time.parse(resp_json['image']['updated_at'])]).to eq([@unverified_si.created_at, @unverified_si.updated_at])
+        end
+
+        it 'does not render errors' do
+          get "/stored_images/#{@unverified_si.id}", headers: @valid_headers
+
+          expect(JSON.parse(response.body)).to_not include('errors')
+        end
+      end
+
+      context "when viewing other's image" do
+        context 'when viewing verified image' do
+          it 'renders limited json for image' do
+            get "/stored_images/#{@verified_si.id}", headers: @valid_headers
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('image')
+            expect(resp_json['image']).to include('url' => @verified_si.url, 'user' => {
+              'username' => @verified_si.user.username,
+            })
+            expect(resp_json['image']).to include('created_at', 'updated_at')
+            expect([Time.parse(resp_json['image']['created_at']), Time.parse(resp_json['image']['updated_at'])]).to eq([@verified_si.created_at, @verified_si.updated_at])
+          end
+
+          it 'does not render errors' do
+            get "/stored_images/#{@unverified_si.id}", headers: @valid_headers
+
+            expect(JSON.parse(response.body)).to_not include('errors')
+          end
+        end
+
+        context 'when viewing unverified image' do
+          let(:other_unverified_si) {
+            StoredImage.create!(user: @admin_user)
+          }
+
+          it 'does not render image' do
+            get "/stored_images/#{other_unverified_si.id}", headers: @valid_headers
+
+            expect(JSON.parse(response.body)).to_not include('image')
+          end
+
+          it 'renders errors' do
+            get "/stored_images/#{other_unverified_si.id}", headers: @valid_headers
+
+            resp_json = JSON.parse(response.body)
+            expect(resp_json).to include('errors')
+            expect(resp_json['errors']).to include('May only view own unverified image')
+          end
+        end
+      end
+    end
+
+    context 'when not logged in' do
+      it 'does not render image' do
+        get "/stored_images/#{@verified_si.id}"
+
+        expect(JSON.parse(response.body)).to_not include('image')
+
+        get "/stored_images/#{@unverified_si.id}"
+
+        expect(JSON.parse(response.body)).to_not include('image')
+      end
+
+      it 'renders errors' do
+        get "/stored_images/#{@verified_si.id}"
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('errors')
+        expect(resp_json['errors']).to include('Must be logged in')
+
+        get "/stored_images/#{@unverified_si.id}"
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('errors')
+        expect(resp_json['errors']).to include('Must be logged in')
+      end
+    end
   end
 
   xdescribe 'POST /stored_images' do

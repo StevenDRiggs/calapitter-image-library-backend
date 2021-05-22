@@ -21,9 +21,27 @@ class StoredImagesController < ApplicationController
     end
   end
 
-  # GET /stored_images/1
+  # GET /stored_images/:id
   def show
-    render json: @stored_image
+    if is_admin?
+      render json: {
+        image: @stored_image,
+      }
+    elsif verify_login
+      if @stored_image.verified || @stored_image.user == verify_login
+        render json: {
+          image: @stored_image,
+        }, include: [user: {only: :username}]
+      else
+        render json: {
+          errors: ['May only view own unverified image'],
+        }
+      end
+    else
+      render json: {
+        errors: ['Must be logged in'],
+      }
+    end
   end
 
   # POST /stored_images
