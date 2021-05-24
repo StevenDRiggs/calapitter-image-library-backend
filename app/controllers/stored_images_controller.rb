@@ -48,10 +48,20 @@ class StoredImagesController < ApplicationController
   def create
     @stored_image = StoredImage.new(stored_image_params)
 
-    if @stored_image.save
-      render json: @stored_image, status: :created, location: @stored_image
+    if verify_login && @stored_image.save
+      if is_admin?
+        render json: @stored_image, status: :created, location: @stored_image
+      else
+        render json: @stored_image, status: :created, location: @stored_image, include: [user: {only: :username}]
+      end
+    elsif verify_login
+      render json: {
+        errors: @stored_image.errors,
+      }, status: :unprocessable_entity
     else
-      render json: @stored_image.errors, status: :unprocessable_entity
+      render json: {
+        errors: ['Must be logged in'],
+      }
     end
   end
 
@@ -77,6 +87,6 @@ class StoredImagesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def stored_image_params
-      params.require(:stored_image).permit(:url)
+      params.require(:stored_image).permit([:userId, :url])
     end
 end

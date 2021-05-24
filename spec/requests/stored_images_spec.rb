@@ -338,7 +338,179 @@ RSpec.describe StoredImagesController, type: :request do
     end
   end
 
-  xdescribe 'POST /stored_images' do
+  fdescribe 'POST /stored_images' do
+    context 'when logged in' do
+      let(:admin_user) {
+        User.create!(username: 'admin username', email: 'admin@email.com', password: 'pass', is_admin: true)
+      }
+
+      let(:non_admin_user) {
+        User.create!(username: 'non-admin username', email: 'nonadmin@email.com', password: 'pass')
+      }
+
+      it 'creates new stored image for logged in user' do
+        post '/login', params: {
+          user: {
+            usernameOrEmail: admin_user.username,
+            password: 'pass',
+          },
+        }
+
+        valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+
+        expect {
+          post '/stored_images', params: {
+            stored_image: {
+              userId: admin_user.id,
+            },
+          }, headers: valid_headers
+        }.to change {
+          StoredImage.all.length
+        }.by(1)
+        expect(StoredImage.last.user).to eq(admin_user)
+
+        post '/login', params: {
+          user: {
+            usernameOrEmail: non_admin_user.username,
+            password: 'pass',
+          },
+        }
+
+        valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+
+        expect {
+          post '/stored_images', params: {
+            stored_image: {
+              userId: non_admin_user.id,
+            },
+          }, headers: valid_headers
+        }.to change {
+          StoredImage.all.length
+        }.by(1)
+        expect(StoredImage.last.user).to eq(non_admin_user)
+      end
+
+      it 'renders json for new stored image' do
+        post '/login', params: {
+          user: {
+            usernameOrEmail: admin_user.username,
+            password: 'pass',
+          },
+        }
+
+        valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+
+        post '/stored_images', params: {
+          stored_image: {
+            userId: admin_user.id,
+          },
+        }, headers: valid_headers
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('url' => StoredImage.last.url, 'user' => {
+          'username' => admin_user.username,
+          'id' => admin_user.id,
+        })
+
+        post '/login', params: {
+          user: {
+            usernameOrEmail: non_admin_user.username,
+            password: 'pass',
+          },
+        }
+
+        valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+
+        post '/stored_images', params: {
+          stored_image: {
+            userId: non_admin_user.id,
+          },
+        }, headers: valid_headers
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('url' => StoredImage.last.url, 'user' => {
+          'username' => non_admin_user.username,
+        })
+      end
+
+      it 'does not render errors' do
+        post '/login', params: {
+          user: {
+            usernameOrEmail: admin_user.username,
+            password: 'pass',
+          },
+        }
+
+        valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+
+        post '/stored_images', params: {
+          stored_image: {
+            userId: admin_user.id,
+          },
+        }, headers: valid_headers
+
+        expect(JSON.parse(response.body)).to_not include('errors')
+
+        post '/login', params: {
+          user: {
+            usernameOrEmail: non_admin_user.username,
+            password: 'pass',
+          },
+        }
+
+        valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+
+        post '/stored_images', params: {
+          stored_image: {
+            userId: non_admin_user.id,
+          },
+        }, headers: valid_headers
+
+        expect(JSON.parse(response.body)).to_not include('errors')
+      end
+    end
+
+    context 'when not logged in' do
+      let(:user) {
+        User.create!(username: 'user', email: 'user@email.com', password: 'pass')
+      }
+
+      it 'does not create new stored image' do
+        expect {
+          post '/stored_images', params: {
+            stored_image: {
+              userId: user.id
+            },
+          }
+        }.to_not change {
+          StoredImage.all.length
+        }
+      end
+
+      it 'renders errors' do
+        post '/stored_images', params: {
+          stored_image: {
+            userId: user.id
+          },
+        }
+
+        resp_json = JSON.parse(response.body)
+        expect(resp_json).to include('errors')
+        expect(resp_json['errors']).to include('Must be logged in')
+      end
+    end
   end
 
   xdescribe 'PATCH/PUT /stored_images/:id' do

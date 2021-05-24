@@ -10,6 +10,10 @@ class StoredImage < ApplicationRecord
   validates :url, profanity_filter: true
 
   # instance methods
+  def userId=(user_id)
+    self.user = User.find(user_id)
+  end
+
   def attach_image(img)
     self.image.attach(img)
     self.update(url: Rails.application.routes.url_helpers.rails_blob_path(self.image, only_path: true), verified: false)
