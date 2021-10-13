@@ -338,7 +338,7 @@ RSpec.describe StoredImagesController, type: :request do
     end
   end
 
-  fdescribe 'POST /stored_images' do
+  describe 'POST /stored_images' do
     context 'when logged in' do
       let(:admin_user) {
         User.create!(username: 'admin username', email: 'admin@email.com', password: 'pass', is_admin: true)
@@ -416,7 +416,7 @@ RSpec.describe StoredImagesController, type: :request do
         expect(resp_json).to include('url' => StoredImage.last.url, 'user' => {
           'username' => admin_user.username,
           'id' => admin_user.id,
-        })
+        }, 'verified' => false)
 
         post '/login', params: {
           user: {
@@ -438,7 +438,7 @@ RSpec.describe StoredImagesController, type: :request do
         resp_json = JSON.parse(response.body)
         expect(resp_json).to include('url' => StoredImage.last.url, 'user' => {
           'username' => non_admin_user.username,
-        })
+        }, 'verified' => false)
       end
 
       it 'does not render errors' do
@@ -513,7 +513,160 @@ RSpec.describe StoredImagesController, type: :request do
     end
   end
 
-  xdescribe 'PATCH/PUT /stored_images/:id' do
+  describe 'PATCH/PUT /stored_images/:id' do
+    before(:context) do
+      travel_to(Time.new(2021, 1, 1))
+      @admin_user = User.create!(username: 'admin username', email: 'admin@email.com', password: 'pass', is_admin: true)
+      @non_admin_user = User.create!(username: 'non-admin username', email: 'nonadmin@email.com', password: 'pass')
+
+      @admin_si = StoredImage.create!(user: @admin_user)
+      @non_admin_si = StoredImage.create!(user: @non_admin_user)
+      travel_back
+    end
+
+    after(:context) do
+      @admin_user.destroy
+      @non_admin_user.destroy
+      @admin_si.destroy
+      @non_admin_si.destroy
+    end
+
+    after(:example) do
+      @admin_si.reload
+      @non_admin_si.reload
+    end
+
+    context 'when logged in as admin' do
+      before(:context) do
+        post '/login', params: {
+          user: {
+            userenameOrEmail: @admin_user.username,
+            password: 'pass',
+          },
+        }
+
+        @valid_headers = {
+          'Authorization' => "Bearer #{JSON.parse(response.body)['token']}",
+        }
+      end
+
+      after(:context) do
+        remove_instance_variable(:@valid_headers)
+      end
+
+      context 'when updating own stored image' do
+        let(:valid_params) {
+          {
+            stored_image: {
+              url: 'https://unsplash.com/photos/1XnXnRdzGbk/',
+              verified: true,
+            },
+          }
+        }
+
+        it 'updates stored image' do
+          expect {
+            patch "/stored_images/#{@admin_si.id}", params: valid_params, headers: @valid_headers
+
+            @admin_si.reload
+          }.to change {
+            [@admin_si.url, @admin_si.verified]
+          }
+        end
+
+        it 'renders json for updated stored image' do
+          travel_to(Time.new(2021, 2, 2))
+          patch "/stored_images/#{@admin_si.id}", params: valid_params, headers: @valid_headers
+
+          @admin_si.reload
+          travel_back
+
+          resp_json = JSON.parse(response.body)
+          expect(resp_json).to include('stored_image')
+          expect(resp_json['stored_image']).to include('url' => @admin_si.url, 'verified' => @admin_si.verified)
+          expect(resp_json['stored_image']).to include('created_at', 'updated_at')
+          expect([Time.parse(resp_json['stored_image']['created_at']), Time.parse(resp_json['stored_image']['updated_at'])]).to eq([@admin_si.created_at, @admin_si.updated_at])
+        end
+
+        it 'does not render errors' do
+          patch "/stored_images/#{@admin_si.id}", params: valid_params, headers: @valid_headers
+
+          expect(JSON.parse(response.body)).to_not include('errors')
+        end
+      end
+
+      context "when updating other's stored image" do
+        before(:context) do
+          @update_params = {
+            stored_image: {
+              url: 'https://unsplash.com/photos/1XnXnRdzGbk/',
+              verified: true,
+            },
+          }
+        end
+
+        after(:context) do
+          remove_instance_variable(:@update_params)
+        end
+
+        context 'when updating url' do
+          it 'does not update store image' do
+          end
+
+          it 'returns json for non-updated stored image' do
+          end
+
+          it 'renders errors' do
+          end
+        end
+
+        context 'when updating verified' do
+          it 'updates stored image' do
+          end
+
+          it 'renders json for updated stored image' do
+          end
+
+          it 'does not render errors' do
+          end
+        end
+      end
+    end
+
+    context 'when logged in as non-admin' do
+      context 'when updating own stored image' do
+        it 'updates stored image' do
+        end
+
+        it 'renders json for updated stored image' do
+        end
+
+        it 'does not render errors' do
+        end
+      end
+
+      context "when updating other's stored image" do
+        it 'does not update stored image' do
+        end
+
+        it 'renders json for non-updated stored image' do
+        end
+
+        it 'renders errors' do
+        end
+      end
+    end
+
+    context 'when not logged in' do
+      it 'does not update stored image' do
+      end
+
+      it 'does not render json for stored image' do
+      end
+
+      it 'renders errors' do
+      end
+    end
   end
 
   xdescribe 'DELETE /stored_images/:id' do

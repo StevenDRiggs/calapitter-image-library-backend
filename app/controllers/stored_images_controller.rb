@@ -65,12 +65,16 @@ class StoredImagesController < ApplicationController
     end
   end
 
-  # PATCH/PUT /stored_images/1
+  # PATCH/PUT /stored_images/:id
   def update
     if @stored_image.update(stored_image_params)
-      render json: @stored_image
+      render json: {
+        stored_image: @stored_image,
+      }
     else
-      render json: @stored_image.errors, status: :unprocessable_entity
+      render json: {
+        errors: @stored_image.errors,
+      }, status: :unprocessable_entity
     end
   end
 
